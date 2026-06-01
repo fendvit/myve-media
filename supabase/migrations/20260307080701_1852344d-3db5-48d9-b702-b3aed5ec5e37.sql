@@ -1,0 +1,1 @@
+ALTER TABLE public.projects ADD COLUMN category text NOT NULL DEFAULT 'web';

@@ -1,0 +1,13 @@
+# MYVE — Vít Fendrych
+
+> Studio MYVE tvoří moderní weby, webové aplikace a software na míru. Making You Visible Everywhere.
+
+## Pages
+
+- [Domů](/): Přehled studia MYVE — služby, projekty, proč s námi.
+- [Projekty](/projekty): Portfolio realizovaných webů a aplikací.
+- [Jak to děláme](/jak-to-delame): Náš proces od analýzy po nasazení.
+
+## Optional
+
+- [Detail projektu](/projekty/:slug): Případové studie jednotlivých projektů.

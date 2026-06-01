@@ -1,0 +1,178 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 30 25% 97%;
+    --foreground: 260 20% 18%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 260 20% 18%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 260 20% 18%;
+
+    --primary: 12 85% 62%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 280 20% 95%;
+    --secondary-foreground: 260 20% 30%;
+
+    --muted: 30 15% 94%;
+    --muted-foreground: 260 10% 45%;
+
+    --accent: 280 70% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 30 15% 88%;
+    --input: 30 15% 88%;
+    --ring: 12 85% 62%;
+
+    --radius: 1rem;
+
+    --sidebar-background: 30 25% 96%;
+    --sidebar-foreground: 260 20% 30%;
+    --sidebar-primary: 12 85% 62%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 280 20% 93%;
+    --sidebar-accent-foreground: 260 20% 30%;
+    --sidebar-border: 30 15% 88%;
+    --sidebar-ring: 12 85% 62%;
+
+    /* Custom tokens */
+    --gradient-primary: linear-gradient(135deg, hsl(12, 85%, 62%), hsl(280, 70%, 60%));
+    --gradient-hero: linear-gradient(180deg, hsl(30, 25%, 97%) 0%, hsl(280, 30%, 95%) 100%);
+    --gradient-warm: linear-gradient(135deg, hsl(12, 85%, 62%), hsl(340, 75%, 58%), hsl(280, 70%, 60%));
+    --shadow-glow: 0 0 40px hsl(12 85% 62% / 0.15);
+    --shadow-card: 0 2px 8px hsl(260 20% 50% / 0.06), 0 8px 24px hsl(260 20% 50% / 0.04);
+    --shadow-card-hover: 0 4px 16px hsl(12 85% 62% / 0.1), 0 12px 32px hsl(280 70% 60% / 0.08);
+
+    --font-display: 'Poppins', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-body);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground));
+  border-radius: 3px;
+}
+
+/* Gradient text utility */
+.text-gradient {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glow effect */
+.glow {
+  box-shadow: var(--shadow-glow);
+}
+
+/* Section divider — now a soft wave-like gradient */
+.section-divider {
+  height: 2px;
+  background: linear-gradient(90deg, transparent 5%, hsl(var(--primary) / 0.15) 30%, hsl(var(--accent) / 0.2) 50%, hsl(var(--primary) / 0.15) 70%, transparent 95%);
+}
+
+/* Floating animation keyframes */
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(3deg); }
+}
+
+@keyframes float-medium {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-14px) rotate(-2deg); }
+}
+
+@keyframes float-fast {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes spin-reverse {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+.animate-float-slow { animation: float-slow 8s ease-in-out infinite; }
+.animate-float-medium { animation: float-medium 6s ease-in-out infinite; }
+.animate-float-fast { animation: float-fast 4s ease-in-out infinite; }
+.animate-spin-slow { animation: spin-slow 20s linear infinite; }
+.animate-spin-reverse { animation: spin-reverse 25s linear infinite; }
+.animate-marquee { animation: marquee 30s linear infinite; }
+.animate-pulse-soft { animation: pulse-soft 3s ease-in-out infinite; }
+
+/* Gradient border utility */
+.gradient-border {
+  position: relative;
+}
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: var(--gradient-primary);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.gradient-border:hover::before {
+  opacity: 1;
+}
+
+@keyframes gradrim-spin {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
