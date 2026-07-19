@@ -7,7 +7,7 @@ const navLinks: { label: string; href: string; type?: "route" }[] = [
   { label: "O nás", href: "#about" },
   { label: "Služby", href: "#services" },
   { label: "Jak to děláme", href: "/jak-to-delame", type: "route" },
-  { label: "Portfolio", href: "#portfolio" },
+  { label: "Projekty", href: "/projekty", type: "route" },
   { label: "Kontakt", href: "#contact" },
 ];
 

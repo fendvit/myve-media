@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,100..900;1,62..125,100..900&family=DM+Sans:wght@300;400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,54 +6,56 @@
 
 @layer base {
   :root {
-    --background: 30 25% 97%;
-    --foreground: 260 20% 18%;
+    /* Ink-black world — coral is the ONLY accent, cream typography */
+    --background: 240 5% 4%;
+    --foreground: 37 39% 94%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 260 20% 18%;
+    --card: 240 4% 7%;
+    --card-foreground: 37 39% 94%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 260 20% 18%;
+    --popover: 240 4% 7%;
+    --popover-foreground: 37 39% 94%;
 
-    --primary: 12 85% 62%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 9 100% 63%;
+    --primary-foreground: 240 5% 4%;
 
-    --secondary: 280 20% 95%;
-    --secondary-foreground: 260 20% 30%;
+    --secondary: 240 4% 10%;
+    --secondary-foreground: 37 25% 85%;
 
-    --muted: 30 15% 94%;
-    --muted-foreground: 260 10% 45%;
+    --muted: 240 4% 11%;
+    --muted-foreground: 37 10% 62%;
 
-    --accent: 280 70% 60%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 9 100% 63%;
+    --accent-foreground: 240 5% 4%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 30 15% 88%;
-    --input: 30 15% 88%;
-    --ring: 12 85% 62%;
+    --border: 240 4% 15%;
+    --input: 240 4% 15%;
+    --ring: 9 100% 63%;
 
     --radius: 1rem;
 
-    --sidebar-background: 30 25% 96%;
-    --sidebar-foreground: 260 20% 30%;
-    --sidebar-primary: 12 85% 62%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 280 20% 93%;
-    --sidebar-accent-foreground: 260 20% 30%;
-    --sidebar-border: 30 15% 88%;
-    --sidebar-ring: 12 85% 62%;
+    --sidebar-background: 240 5% 5%;
+    --sidebar-foreground: 37 25% 85%;
+    --sidebar-primary: 9 100% 63%;
+    --sidebar-primary-foreground: 240 5% 4%;
+    --sidebar-accent: 240 4% 10%;
+    --sidebar-accent-foreground: 37 25% 85%;
+    --sidebar-border: 240 4% 15%;
+    --sidebar-ring: 9 100% 63%;
 
-    /* Custom tokens */
-    --gradient-primary: linear-gradient(135deg, hsl(12, 85%, 62%), hsl(280, 70%, 60%));
-    --gradient-hero: linear-gradient(180deg, hsl(30, 25%, 97%) 0%, hsl(280, 30%, 95%) 100%);
-    --gradient-warm: linear-gradient(135deg, hsl(12, 85%, 62%), hsl(340, 75%, 58%), hsl(280, 70%, 60%));
-    --shadow-glow: 0 0 40px hsl(12 85% 62% / 0.15);
-    --shadow-card: 0 2px 8px hsl(260 20% 50% / 0.06), 0 8px 24px hsl(260 20% 50% / 0.04);
-    --shadow-card-hover: 0 4px 16px hsl(12 85% 62% / 0.1), 0 12px 32px hsl(280 70% 60% / 0.08);
+    /* Custom tokens — coral family only (the orange→pink gradient lives
+       exclusively inside the EntranceLoader's M) */
+    --gradient-primary: linear-gradient(135deg, hsl(9, 100%, 63%), hsl(21, 100%, 58%));
+    --gradient-hero: linear-gradient(180deg, hsl(240, 5%, 4%) 0%, hsl(240, 5%, 6%) 100%);
+    --gradient-warm: linear-gradient(135deg, hsl(9, 100%, 63%), hsl(21, 100%, 58%));
+    --shadow-glow: 0 0 40px hsl(9 100% 63% / 0.25);
+    --shadow-card: 0 2px 8px hsl(240 5% 0% / 0.5), 0 8px 24px hsl(240 5% 0% / 0.35);
+    --shadow-card-hover: 0 4px 16px hsl(9 100% 63% / 0.15), 0 12px 32px hsl(240 5% 0% / 0.5);
 
-    --font-display: 'Poppins', sans-serif;
+    --font-display: 'Archivo', sans-serif;
     --font-body: 'DM Sans', sans-serif;
   }
 }
@@ -63,6 +65,10 @@
     @apply border-border;
   }
 
+  html {
+    background: hsl(var(--background));
+  }
+
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-body);
@@ -70,6 +76,11 @@
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
+  }
+
+  ::selection {
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
   }
 }
 
@@ -83,11 +94,11 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground));
+  background: hsl(240 4% 22%);
   border-radius: 3px;
 }
 
-/* Gradient text utility */
+/* Gradient text utility — coral family */
 .text-gradient {
   background: var(--gradient-primary);
   -webkit-background-clip: text;
@@ -95,15 +106,44 @@
   background-clip: text;
 }
 
+/* MYVE wordmark — cream flowing into coral across the whole word so the
+   MY/VE handoff reads as one smooth gradient instead of a hard two-tone split.
+   Tracking is loosened from display-type's -0.03em so the angled Y and V
+   don't collide. */
+.display-type.wordmark-myve {
+  background: linear-gradient(
+    100deg,
+    hsl(37 39% 94%) 0%,
+    hsl(37 39% 94%) 32%,
+    hsl(21 100% 60%) 60%,
+    hsl(9 100% 63%) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: 0.005em;
+}
+
+/* Display type — bold condensed-feeling Archivo, tight tracking */
+.display-type {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-stretch: 115%;
+  letter-spacing: -0.03em;
+  line-height: 0.92;
+  text-transform: uppercase;
+}
+
 /* Glow effect */
 .glow {
   box-shadow: var(--shadow-glow);
 }
 
-/* Section divider — now a soft wave-like gradient */
+/* Section divider — subtle coral hairline */
 .section-divider {
-  height: 2px;
-  background: linear-gradient(90deg, transparent 5%, hsl(var(--primary) / 0.15) 30%, hsl(var(--accent) / 0.2) 50%, hsl(var(--primary) / 0.15) 70%, transparent 95%);
+  height: 1px;
+  background: linear-gradient(90deg, transparent 5%, hsl(var(--primary) / 0.25) 50%, transparent 95%);
 }
 
 /* Floating animation keyframes */

@@ -1,17 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { preloadOrbitFrames } from "@/lib/orbitFrames";
 
 type Phase = "drift" | "converge" | "reveal";
 
 const ORANGE = "#FF5D42";
 const PINK = "#D83D7C";
 
-// 4 polygons that together form the M (viewBox 260 x 220)
+// 4 polygons that together form the M (viewBox 260 x 220).
+// Symmetric splayed M: the left leg tilts right and the right leg tilts
+// left — mirror images about the center — so both feet kick outward and
+// the M is widest at the bottom.
 const POLYGONS = [
-  "0,0 40,0 60,220 20,220",        // outer-left
-  "40,0 80,0 140,170 110,170",     // inner-left  (top-left → bottom-center)
-  "180,0 220,0 150,170 120,170",   // inner-right (top-right → bottom-center)
-  "220,0 260,0 240,220 200,220",   // outer-right
+  "40,0 80,0 40,220 0,220",        // outer-left  (tilts right, foot kicks out left)
+  "80,0 120,0 150,175 110,175",    // inner-left  (top-left → bottom-center)
+  "140,0 180,0 150,175 110,175",   // inner-right (top-right → bottom-center)
+  "180,0 220,0 260,220 220,220",   // outer-right (tilts left, foot kicks out right)
 ];
 
 // Random helpers
@@ -59,6 +63,12 @@ const EntranceLoader = () => {
     []
   );
 
+  // Start streaming the hero orbit frames while the M drifts,
+  // so the orbit is scrubbable the moment the page is revealed.
+  useEffect(() => {
+    preloadOrbitFrames();
+  }, []);
+
   // Lock scroll while visible
   useEffect(() => {
     if (!visible) return;
@@ -97,7 +107,7 @@ const EntranceLoader = () => {
       <motion.div
         key="entrance-loader"
         className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden"
-        style={{ background: "#FFFFFF" }}
+        style={{ background: "#0A0A0B" }}
         initial={{ opacity: 1 }}
         animate={
           phase === "reveal"

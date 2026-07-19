@@ -1,13 +1,14 @@
-import { useRef } from "react";
-import { motion, useScroll, useTransform, useReducedMotion, MotionValue } from "framer-motion";
+import { useRef, useState } from "react";
+import { AnimatePresence, motion, transform, useScroll, useTransform, useReducedMotion, MotionValue } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ArrowRight, ChevronDown, Sparkles, Wand2, ShieldCheck, CheckCircle2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Seo from "@/components/Seo";
-import FloatingShapes from "@/components/ui/FloatingShapes";
 import { ILLUSTRATIONS } from "@/components/howwework/StepIllustration";
 import GradientRimButton from "@/components/ui/GradientRimButton";
+import ConsultationDialog from "@/components/ConsultationDialog";
+import { cn } from "@/lib/utils";
 
 const STEPS = [
   {
@@ -141,6 +142,131 @@ const CardContent = ({
   );
 };
 
+/**
+ * Phone-first accordion rendered as a single cohesive panel. Steps are clean
+ * segments divided by hairlines; the active step is lifted with a left accent
+ * and expands within the block. Tapping an open step closes it — all can close.
+ */
+const MobileStepsAccordion = ({ total }: { total: number }) => {
+  const [open, setOpen] = useState<number | null>(null);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-60px" }}
+      transition={{ duration: 0.5 }}
+      className="rounded-[28px] bg-card border border-border overflow-hidden"
+      style={{ boxShadow: "var(--shadow-card)" }}
+    >
+      {STEPS.map((step, i) => {
+        const isOpen = open === i;
+        const isLast = i === STEPS.length - 1;
+        const BadgeIcon = step.badge.icon;
+        return (
+          <div
+            key={step.number}
+            // Lower rows sit in front and overlap the top lip of the row above,
+            // so the stack reads as cards resting on one another (see reference).
+            style={{ zIndex: i }}
+            className={cn(
+              "relative transition-colors duration-300 rounded-t-[22px]",
+              isOpen ? "bg-primary/[0.04]" : "bg-card",
+              i > 0 &&
+                "-mt-3 border-t border-white/[0.06] shadow-[0_-7px_18px_-6px_rgba(0,0,0,0.55)]"
+            )}
+          >
+            {/* Left accent bar for the active step */}
+            <AnimatePresence initial={false}>
+              {isOpen && (
+                <motion.span
+                  initial={{ scaleY: 0, opacity: 0 }}
+                  animate={{ scaleY: 1, opacity: 1 }}
+                  exit={{ scaleY: 0, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                  className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full origin-center"
+                  style={{ background: "var(--gradient-primary)" }}
+                />
+              )}
+            </AnimatePresence>
+
+            {/* Header — always visible, toggles the step */}
+            <button
+              type="button"
+              onClick={() => setOpen((cur) => (cur === i ? null : i))}
+              aria-expanded={isOpen}
+              className="w-full flex items-center gap-4 px-5 py-5 text-left"
+            >
+              <span
+                className={cn(
+                  "flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center font-display font-bold text-lg transition-all duration-300",
+                  isOpen ? "text-primary-foreground" : "text-primary bg-primary/10"
+                )}
+                style={isOpen ? { background: "var(--gradient-primary)" } : undefined}
+              >
+                {step.number}
+              </span>
+              <div className="flex-1 min-w-0">
+                <span className="block text-[10px] tracking-[0.22em] uppercase text-primary/80 font-display font-medium mb-1">
+                  Krok {i + 1} ze {total}
+                </span>
+                <h2 className="font-display font-semibold text-[17px] text-foreground leading-snug">
+                  {step.title}
+                </h2>
+              </div>
+              <ChevronDown
+                className={cn(
+                  "w-5 h-5 flex-shrink-0 text-muted-foreground transition-transform duration-300",
+                  isOpen && "rotate-180 text-primary"
+                )}
+              />
+            </button>
+
+            {/* Body — expands only for the active step */}
+            <AnimatePresence initial={false}>
+              {isOpen && (
+                <motion.div
+                  key="body"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{
+                    height: { duration: 0.35, ease: [0.4, 0, 0.2, 1] },
+                    opacity: { duration: 0.25, ease: "easeOut" },
+                  }}
+                  className="overflow-hidden"
+                >
+                  <div className="px-5 pb-6 pl-[76px]">
+                    <p className="font-body text-muted-foreground text-[15px] leading-relaxed">
+                      {step.body}
+                    </p>
+                    <div className="mt-5 flex items-start gap-3 rounded-2xl bg-primary/5 border border-primary/15 px-4 py-3.5">
+                      <span
+                        className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-primary-foreground"
+                        style={{ background: "var(--gradient-primary)" }}
+                      >
+                        <BadgeIcon className="w-4 h-4" />
+                      </span>
+                      <div className="flex flex-col">
+                        <span className="font-display font-semibold text-sm text-primary leading-tight">
+                          {step.badge.title}
+                        </span>
+                        <span className="font-body text-xs text-muted-foreground mt-0.5 leading-snug">
+                          {step.badge.subtitle}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        );
+      })}
+    </motion.div>
+  );
+};
+
 const StepCard = ({
   step,
   index,
@@ -157,11 +283,14 @@ const StepCard = ({
   const end = start + slice * 0.7;
   const rest = RESTING[index];
 
-  const y = useTransform(scrollYProgress, [start, end], [-600, rest.y]);
-  const x = useTransform(scrollYProgress, [start, end], [rest.x * 0.4, rest.x]);
-  const opacity = useTransform(scrollYProgress, [start, start + slice * 0.15, end], [0, 1, 1]);
-  const rotate = useTransform(scrollYProgress, [start, end], [-10, rest.rotate]);
-  const scale = useTransform(scrollYProgress, [start, end], [0.92, 1]);
+  // Function transforms opt out of framer's WAAPI scroll handoff (see HeroOrbit)
+  const y = useTransform(scrollYProgress, (v) => transform(v, [start, end], [-600, rest.y]));
+  const x = useTransform(scrollYProgress, (v) => transform(v, [start, end], [rest.x * 0.4, rest.x]));
+  const opacity = useTransform(scrollYProgress, (v) =>
+    transform(v, [start, start + slice * 0.15, end], [0, 1, 1])
+  );
+  const rotate = useTransform(scrollYProgress, (v) => transform(v, [start, end], [-10, rest.rotate]));
+  const scale = useTransform(scrollYProgress, (v) => transform(v, [start, end], [0.92, 1]));
 
   const initialStyle =
     index === 0
@@ -193,13 +322,15 @@ const BackdropNumber = ({
   const slice = 1 / total;
   const start = index * slice;
   const end = start + slice;
-  const opacity = useTransform(
-    scrollYProgress,
-    [Math.max(0, start - slice * 0.15), start + slice * 0.15, end - slice * 0.1, end + slice * 0.05],
-    [0, 1, 1, 0]
+  const opacity = useTransform(scrollYProgress, (v) =>
+    transform(
+      v,
+      [Math.max(0, start - slice * 0.15), start + slice * 0.15, end - slice * 0.1, end + slice * 0.05],
+      [0, 1, 1, 0]
+    )
   );
-  const x = useTransform(scrollYProgress, [start, end], ["-2%", "2%"]);
-  const y = useTransform(scrollYProgress, [start, end], ["1%", "-1%"]);
+  const x = useTransform(scrollYProgress, (v) => transform(v, [start, end], [-24, 24]));
+  const y = useTransform(scrollYProgress, (v) => transform(v, [start, end], [10, -10]));
 
   return (
     <motion.span
@@ -218,37 +349,8 @@ const ScrollBackdrop = ({
   scrollYProgress: MotionValue<number>;
   total: number;
 }) => {
-  const blobAY = useTransform(scrollYProgress, [0, 1], ["-15%", "25%"]);
-  const blobAX = useTransform(scrollYProgress, [0, 1], ["-10%", "8%"]);
-  const blobBY = useTransform(scrollYProgress, [0, 1], ["20%", "-20%"]);
-  const blobBX = useTransform(scrollYProgress, [0, 1], ["10%", "-12%"]);
-  const blobCY = useTransform(scrollYProgress, [0, 1], ["10%", "-15%"]);
-  const blobCX = useTransform(scrollYProgress, [0, 1], ["-5%", "15%"]);
-
   return (
     <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-      <motion.div
-        style={{ y: blobAY, x: blobAX }}
-        className="absolute -top-32 -left-24 w-[460px] h-[460px] rounded-full blur-3xl opacity-40"
-        aria-hidden
-      >
-        <div className="w-full h-full rounded-full" style={{ background: "hsl(var(--primary) / 0.55)" }} />
-      </motion.div>
-      <motion.div
-        style={{ y: blobBY, x: blobBX }}
-        className="absolute top-1/3 -right-32 w-[520px] h-[520px] rounded-full blur-3xl opacity-35"
-        aria-hidden
-      >
-        <div className="w-full h-full rounded-full" style={{ background: "hsl(var(--accent) / 0.6)" }} />
-      </motion.div>
-      <motion.div
-        style={{ y: blobCY, x: blobCX }}
-        className="absolute bottom-[-10%] left-1/4 w-[380px] h-[380px] rounded-full blur-3xl opacity-30"
-        aria-hidden
-      >
-        <div className="w-full h-full rounded-full" style={{ background: "var(--gradient-primary)" }} />
-      </motion.div>
-
       {Array.from({ length: total }).map((_, i) => (
         <BackdropNumber
           key={i}
@@ -283,7 +385,6 @@ const HowWeWork = () => {
 
       {/* Intro */}
       <section className="relative pt-32 pb-16 lg:pt-40 lg:pb-24 overflow-hidden">
-        <FloatingShapes />
         <div className="container relative z-10 mx-auto px-6 lg:px-12 max-w-4xl text-center">
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -346,21 +447,9 @@ const HowWeWork = () => {
       )}
 
       {/* Mobile / reduced-motion fallback */}
-      <section className={`${!reduced ? "lg:hidden" : ""} py-12`}>
-        <div className="container mx-auto px-6 max-w-2xl flex flex-col gap-6">
-          {STEPS.map((step, i) => (
-            <motion.article
-              key={step.number}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.5, delay: i * 0.05 }}
-              className="relative rounded-3xl bg-card border border-border p-6 overflow-hidden"
-              style={{ boxShadow: "var(--shadow-card)" }}
-            >
-              <CardContent step={step} index={i} total={STEPS.length} />
-            </motion.article>
-          ))}
+      <section className={`${!reduced ? "lg:hidden" : ""} py-10`}>
+        <div className="container mx-auto px-5 max-w-xl">
+          <MobileStepsAccordion total={STEPS.length} />
         </div>
       </section>
 
@@ -374,16 +463,12 @@ const HowWeWork = () => {
             Domluvíme si nezávaznou konzultaci a probereme, jak by váš projekt mohl vypadat.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <GradientRimButton
-              as="a"
-              href="https://calendly.com/fendvit-bis/30min"
-              target="_blank"
-              rel="noopener noreferrer"
-              variant="filled"
-            >
-              <span>Domluvit konzultaci</span>
-              <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-            </GradientRimButton>
+            <ConsultationDialog>
+              <GradientRimButton as="button" variant="filled">
+                <span>Domluvit konzultaci</span>
+                <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+              </GradientRimButton>
+            </ConsultationDialog>
             <GradientRimButton
               variant="outline"
               renderInner={({ className, children }) => (

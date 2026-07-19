@@ -1,7 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, ExternalLink, Globe } from "lucide-react";
 import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
@@ -86,11 +85,9 @@ const ProjectDetail = () => {
           </Link>
 
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-            <div className="flex items-center gap-3 mb-4">
-              <Badge variant="secondary" className="font-display text-xs uppercase rounded-full px-4">
-                {project.category === "app" ? "Aplikace" : "Web"}
-              </Badge>
-            </div>
+            <p className="text-primary font-display font-medium text-xs tracking-[0.35em] uppercase mb-4">
+              {project.category === "app" ? "Aplikace" : "Web"}
+            </p>
 
             <h1 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold mb-6">{project.title}</h1>
 
@@ -119,16 +116,8 @@ const ProjectDetail = () => {
             </motion.div>
           )}
 
-          {project.tags && project.tags.length > 0 && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="flex flex-wrap gap-2 mb-10">
-              {project.tags.map((tag: string) => (
-                <Badge key={tag} variant="secondary" className="font-display text-xs rounded-full px-3">{tag}</Badge>
-              ))}
-            </motion.div>
-          )}
-
           {project.result_text && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }} className="rounded-2xl p-6 mb-12 border space-y-2" style={{ backgroundColor: "hsl(12, 85%, 62%, 0.05)", borderColor: "hsl(12, 85%, 62%, 0.15)" }}>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }} className="rounded-2xl p-6 mb-12 border space-y-2" style={{ backgroundColor: "hsl(var(--primary) / 0.06)", borderColor: "hsl(var(--primary) / 0.2)" }}>
               {project.result_text.split('\n').filter(Boolean).map((line, i) => (
                 <p key={i} className="text-primary font-display font-semibold text-lg">↗ {line.trim()}</p>
               ))}
@@ -159,7 +148,16 @@ const ProjectDetail = () => {
                     </div>
                     <div>
                       <h3 className="font-display font-semibold text-lg mb-1">{step.title}</h3>
-                      <p className="text-muted-foreground leading-relaxed">{step.description}</p>
+                      {/* Data may contain literal "\n" sequences as well as real newlines */}
+                      {step.description
+                        .split(/\\n|\n/)
+                        .map((line) => line.trim().replace(/^[,;]\s*/, ""))
+                        .filter(Boolean)
+                        .map((line, li) => (
+                          <p key={li} className="text-muted-foreground leading-relaxed">
+                            {line}
+                          </p>
+                        ))}
                     </div>
                   </div>
                 ))}

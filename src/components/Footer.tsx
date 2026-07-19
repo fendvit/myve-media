@@ -4,17 +4,7 @@ import { Link } from "react-router-dom";
 
 const Footer = () => {
   return (
-    <footer className="relative pt-12 pb-8 overflow-hidden">
-      {/* Wave SVG divider */}
-      <div className="absolute top-0 left-0 right-0 -translate-y-[99%]">
-        <svg viewBox="0 0 1440 60" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full">
-          <path
-            d="M0 60V20C240 0 480 40 720 30C960 20 1200 0 1440 20V60H0Z"
-            fill="hsl(var(--background))"
-          />
-        </svg>
-      </div>
-
+    <footer className="relative pt-12 pb-8 overflow-hidden border-t border-border">
       <div className="container mx-auto px-6 lg:px-12">
         {/* Motto */}
         <p className="text-center text-muted-foreground text-sm mb-8 font-display">

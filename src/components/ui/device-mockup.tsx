@@ -1,3 +1,4 @@
+import { Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type DeviceVariant = "phone" | "laptop" | "tablet" | "desktop";
@@ -9,95 +10,63 @@ interface DeviceMockupProps {
   className?: string;
   hoverSrc?: string;
   hoverAlt?: string;
+  /** Domain shown in the browser URL pill, e.g. "realflows.cz". */
+  label?: string;
 }
 
-const variantStyles: Record<DeviceVariant, { wrapper: string; screen: string; bezel: string }> = {
-  phone: {
-    wrapper: "w-[140px] lg:w-[150px]",
-    bezel: "rounded-[24px] p-[8px] pb-[12px]",
-    screen: "rounded-[16px] aspect-[9/19.5]",
-  },
-  tablet: {
-    wrapper: "w-[200px] lg:w-[260px]",
-    bezel: "rounded-[18px] p-[10px]",
-    screen: "rounded-[10px] aspect-[3/4]",
-  },
-  laptop: {
-    wrapper: "w-[280px] lg:w-[360px]",
-    bezel: "rounded-t-[12px] p-[8px] pb-[6px]",
-    screen: "rounded-[4px] aspect-video",
-  },
-  desktop: {
-    wrapper: "w-[300px] lg:w-[380px]",
-    bezel: "rounded-[10px] p-[10px]",
-    screen: "rounded-[4px] aspect-video",
-  },
-};
-
-const DeviceMockup = ({ variant, src, alt = "Project screenshot", className, hoverSrc, hoverAlt }: DeviceMockupProps) => {
-  const styles = variantStyles[variant];
-
-  return (
-    <div className={cn(styles.wrapper, className)}>
-      {/* Device frame */}
-      <div
-        className={cn(
-          styles.bezel,
-          "bg-[hsl(var(--foreground)/0.85)] shadow-2xl backdrop-blur-sm border border-[hsl(var(--foreground)/0.15)]"
-        )}
-      >
-        {/* Notch for phone */}
-        {variant === "phone" && (
-          <div className="flex justify-center mb-1">
-            <div className="w-16 h-[5px] rounded-full bg-[hsl(var(--foreground)/0.6)]" />
-          </div>
-        )}
-
-        {/* Camera dot for laptop/desktop */}
-        {(variant === "laptop" || variant === "desktop") && (
-          <div className="flex justify-center mb-1">
-            <div className="w-[6px] h-[6px] rounded-full bg-[hsl(var(--foreground)/0.4)]" />
-          </div>
-        )}
-
-        {/* Screen */}
-        <div className={cn(styles.screen, "relative overflow-hidden bg-secondary")}>
-          <img
-            src={src}
-            alt={alt}
-            className="w-full h-full object-cover object-top"
-            loading="lazy"
-          />
-          {hoverSrc && (
-            <div className="absolute inset-0 flex items-center justify-center bg-background opacity-0 group-hover:opacity-100 transition-opacity duration-500 ease-out">
-              <img
-                src={hoverSrc}
-                alt={hoverAlt || alt}
-                className="max-w-[70%] max-h-[70%] object-contain"
-                loading="lazy"
-              />
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Laptop base / keyboard */}
-      {variant === "laptop" && (
-        <div className="mx-auto">
-          <div className="h-[6px] bg-[hsl(var(--foreground)/0.7)] rounded-b-lg mx-4 border-t border-[hsl(var(--foreground)/0.3)]" />
-          <div className="h-[3px] bg-[hsl(var(--foreground)/0.5)] rounded-b-xl mx-8" />
-        </div>
-      )}
-
-      {/* Desktop stand */}
-      {variant === "desktop" && (
-        <div className="flex flex-col items-center">
-          <div className="w-[30%] h-[20px] bg-[hsl(var(--foreground)/0.6)] border-x border-[hsl(var(--foreground)/0.3)]" />
-          <div className="w-[45%] h-[6px] bg-[hsl(var(--foreground)/0.5)] rounded-b-lg" />
-        </div>
-      )}
+const HoverReveal = ({ hoverSrc, hoverAlt }: { hoverSrc?: string; hoverAlt?: string }) =>
+  hoverSrc ? (
+    <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/95 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ease-out">
+      <img
+        src={hoverSrc}
+        alt={hoverAlt}
+        className="max-w-[62%] max-h-[62%] object-contain"
+        loading="lazy"
+      />
     </div>
-  );
-};
+  ) : null;
+
+/** Premium floating browser window — used for all web projects. */
+const BrowserFrame = ({ src, alt, hoverSrc, hoverAlt, label }: Omit<DeviceMockupProps, "variant" | "className">) => (
+  <div className="w-full overflow-hidden rounded-2xl border border-white/10 bg-[hsl(var(--card))] shadow-[0_2px_8px_hsl(240_5%_0%/0.5),0_30px_60px_-15px_hsl(240_5%_0%/0.7)] transition-transform duration-500 ease-out group-hover:-translate-y-1.5">
+    {/* Toolbar */}
+    <div className="flex h-9 items-center gap-3 border-b border-white/[0.06] bg-[hsl(var(--secondary))] px-4">
+      <div className="flex items-center gap-1.5">
+        <span className="h-2.5 w-2.5 rounded-full bg-white/15" />
+        <span className="h-2.5 w-2.5 rounded-full bg-white/15" />
+        <span className="h-2.5 w-2.5 rounded-full bg-white/15" />
+      </div>
+      <div className="flex h-5 min-w-0 flex-1 items-center gap-1.5 rounded-full bg-background/60 px-3">
+        <Lock className="h-2.5 w-2.5 shrink-0 text-muted-foreground" />
+        <span className="truncate font-body text-[10px] text-muted-foreground">
+          {label || "www"}
+        </span>
+      </div>
+    </div>
+    {/* Screen */}
+    <div className="relative aspect-video overflow-hidden bg-secondary">
+      <img src={src} alt={alt} className="h-full w-full object-cover object-top" loading="lazy" />
+      <HoverReveal hoverSrc={hoverSrc} hoverAlt={hoverAlt} />
+    </div>
+  </div>
+);
+
+/** Modern edge-to-edge phone — used for app projects. */
+const PhoneFrame = ({ src, alt, hoverSrc, hoverAlt }: Omit<DeviceMockupProps, "variant" | "className" | "label">) => (
+  <div className="mx-auto w-[170px] rounded-[2.2rem] border border-white/10 bg-[hsl(var(--card))] p-2 shadow-[0_2px_8px_hsl(240_5%_0%/0.5),0_30px_60px_-15px_hsl(240_5%_0%/0.7)] transition-transform duration-500 ease-out group-hover:-translate-y-1.5">
+    <div className="relative aspect-[9/19.5] overflow-hidden rounded-[1.6rem] bg-secondary">
+      {/* Dynamic island */}
+      <div className="absolute left-1/2 top-2 z-30 h-4 w-16 -translate-x-1/2 rounded-full bg-black/90" />
+      <img src={src} alt={alt} className="h-full w-full object-cover object-top" loading="lazy" />
+      <HoverReveal hoverSrc={hoverSrc} hoverAlt={hoverAlt} />
+    </div>
+  </div>
+);
+
+const DeviceMockup = ({ variant, className, ...media }: DeviceMockupProps) => (
+  <div className={cn("w-full", className)}>
+    {variant === "phone" ? <PhoneFrame {...media} /> : <BrowserFrame {...media} />}
+  </div>
+);
 
 export default DeviceMockup;

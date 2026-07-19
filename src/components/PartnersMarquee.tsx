@@ -139,7 +139,7 @@ const PartnersMarquee = () => {
       <img
         src={logo.logo_url}
         alt={logo.name}
-        className="h-8 md:h-10 w-auto object-contain opacity-50 hover:opacity-100 transition-opacity duration-300 grayscale hover:grayscale-0"
+        className="h-8 md:h-10 w-auto object-contain opacity-70 hover:opacity-100 transition-all duration-300 grayscale invert brightness-125 mix-blend-screen hover:grayscale-0 hover:invert-0 hover:brightness-100 hover:mix-blend-normal"
         draggable={false}
       />
     ) : (

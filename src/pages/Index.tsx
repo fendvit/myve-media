@@ -1,16 +1,13 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import Navbar from "@/components/Navbar";
-import HeroSection from "@/components/HeroSection";
+import HeroOrbit from "@/components/HeroOrbit";
 import ScrollProgress from "@/components/ScrollProgress";
+import StatsStrip from "@/components/StatsStrip";
 import PartnersMarquee from "@/components/PartnersMarquee";
-import AboutSection from "@/components/AboutSection";
-import ServicesSection from "@/components/ServicesSection";
-import PortfolioSection from "@/components/PortfolioSection";
-import WhyMeSection from "@/components/WhyMeSection";
-
-// import TestimonialsSection from "@/components/TestimonialsSection";
-import ContactSection from "@/components/ContactSection";
+import PillarsSection from "@/components/PillarsSection";
+import WorkSection from "@/components/WorkSection";
+import FinaleSection from "@/components/FinaleSection";
 import Footer from "@/components/Footer";
 import Seo from "@/components/Seo";
 
@@ -37,18 +34,12 @@ const Index = () => {
       <ScrollProgress />
       <Navbar />
       <main>
-        <HeroSection />
+        <HeroOrbit />
+        <StatsStrip />
         <PartnersMarquee />
-        <div className="section-divider relative z-10" />
-        <AboutSection />
-        <div className="section-divider" />
-        <ServicesSection />
-        <div className="section-divider" />
-        <PortfolioSection />
-        <div className="section-divider" />
-        <WhyMeSection />
-        {/* Testimonials section temporarily removed */}
-        <ContactSection />
+        <PillarsSection />
+        <WorkSection />
+        <FinaleSection />
       </main>
       <Footer />
     </div>

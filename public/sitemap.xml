@@ -15,34 +15,4 @@
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
-  <url>
-    <loc>https://myve.media/projekty/garvys-web-pro-generovani-poptavek-v-oblasti-vrat-a-stinici-techniky</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://myve.media/projekty/ultraquest-webova-platforma-pro-virtualni-ultra-zavody</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://myve.media/projekty/realtixo-web-pro-blockchainovou-investicni-platformu</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://myve.media/projekty/zabava-za-skolou</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://myve.media/projekty/realflows-saas-platforma-pro-generovani-realitnich-poptavek</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://myve.media/projekty/sport-academy-aplikace-pro-spravu-florbalovych-turnaju</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
 </urlset>

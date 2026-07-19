@@ -14,7 +14,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ["Poppins", "sans-serif"],
+        display: ["Archivo", "sans-serif"],
         body: ["DM Sans", "sans-serif"],
       },
       colors: {
