@@ -101,15 +101,15 @@ const ShowcaseItem = ({
       style={{ opacity, x, pointerEvents: active ? "auto" : "none" }}
       className="absolute inset-0 z-10"
     >
-      <div className="container mx-auto px-6 lg:px-12 h-full flex flex-col justify-center gap-6 pt-28 pb-48 md:pt-16 md:pb-0 md:grid md:grid-cols-2 md:items-center md:gap-12">
+      <div className="container mx-auto px-6 lg:px-12 h-full flex flex-col justify-start md:justify-center gap-6 pt-44 pb-48 md:pt-16 md:pb-0 md:grid md:grid-cols-2 md:items-center md:gap-12">
         <div>
           <div
             aria-hidden
-            className="display-type text-foreground/[0.14] text-[clamp(4.5rem,12vw,10rem)] select-none"
+            className="display-type text-foreground/[0.14] text-[clamp(3.5rem,12vw,10rem)] leading-none select-none"
           >
             {String(index + 1).padStart(2, "0")}
           </div>
-          <h3 className="display-type text-foreground text-[clamp(2rem,4.5vw,4rem)] -mt-3 md:-mt-5">
+          <h3 className="display-type text-foreground text-[clamp(1.9rem,4.5vw,4rem)] leading-[1.05] -mt-1 md:-mt-5">
             {project.title}
           </h3>
           <p className="text-muted-foreground text-sm md:text-base leading-relaxed mt-4 max-w-md line-clamp-3">
