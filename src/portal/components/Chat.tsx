@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Paperclip, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { db, signAttachment, supabase, uploadAttachment } from "../lib/db";
+import { notifyNewMessage } from "../lib/push";
 import { formatDayLabel, formatTime } from "../lib/format";
 import type { PortalMessage, SenderRole } from "../lib/types";
 
@@ -156,6 +157,11 @@ export default function Chat({ clientId, as, heading }: ChatProps) {
           ? current
           : [...current, data as PortalMessage],
       );
+
+      // Fire-and-forget: the message is already saved, so a push failure must
+      // not be reported as a send failure.
+      void notifyNewMessage((data as PortalMessage).id);
+
       setDraft("");
       setPendingFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";

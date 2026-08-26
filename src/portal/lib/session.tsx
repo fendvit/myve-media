@@ -8,6 +8,8 @@ interface PortalSessionValue {
   session: Session | null;
   role: PortalRole | null;
   clientId: string | null;
+  /** Set when the profile lookup itself failed, as opposed to finding no row. */
+  profileError: string | null;
   refresh: () => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -18,17 +20,27 @@ export function PortalSessionProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<PortalProfile | null>(null);
+  const [profileError, setProfileError] = useState<string | null>(null);
 
   async function loadProfile(userId: string | undefined) {
     if (!userId) {
       setProfile(null);
       return;
     }
-    const { data } = await db
+    const { data, error } = await db
       .from("portal_profiles")
       .select("user_id, role, client_id")
       .eq("user_id", userId)
       .maybeSingle();
+
+    // Distinguish "no row" from "the query failed": treating a failed lookup as
+    // "no access" strands a legitimate admin on the fallback screen with no clue
+    // why. Keep the last known profile and surface the error instead.
+    if (error) {
+      setProfileError(error.message);
+      return;
+    }
+    setProfileError(null);
     setProfile((data as PortalProfile) ?? null);
   }
 
@@ -70,13 +82,25 @@ export function PortalSessionProvider({ children }: { children: ReactNode }) {
       session,
       role: profile?.role ?? null,
       clientId: profile?.client_id ?? null,
-      refresh: () => loadProfile(session?.user?.id),
+      profileError,
+      // Reads the session from the auth client rather than from `session` state.
+      // Callers invoke this immediately after signing in, at which point the
+      // state variable is still the pre-login value (null) — the closure would
+      // capture that and look up a profile for `undefined`, wiping the profile
+      // that onAuthStateChange is concurrently setting. Whichever write landed
+      // last decided whether you got in.
+      refresh: async () => {
+        const { data } = await supabase.auth.getSession();
+        setSession(data.session);
+        await loadProfile(data.session?.user?.id);
+      },
       signOut: async () => {
         await supabase.auth.signOut();
         setProfile(null);
+        setProfileError(null);
       },
     }),
-    [loading, session, profile],
+    [loading, session, profile, profileError],
   );
 
   return (

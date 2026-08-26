@@ -63,6 +63,16 @@ export type PortalProfile = {
   client_id: string | null;
 };
 
+export type PortalPushSubscription = {
+  id: string;
+  user_id: string;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  user_agent: string | null;
+  created_at: string;
+};
+
 type Table<Row, Insert = Partial<Row>, Update = Partial<Row>> = {
   Row: Row;
   Insert: Insert;
@@ -98,6 +108,12 @@ export type PortalDatabase = {
         >
       >;
       portal_profiles: Table<PortalProfile>;
+      portal_push_subscriptions: Table<
+        PortalPushSubscription,
+        { user_id: string; endpoint: string; p256dh: string; auth: string } & Partial<
+          Omit<PortalPushSubscription, "user_id" | "endpoint" | "p256dh" | "auth">
+        >
+      >;
     };
     // `{ [_ in never]: never }` and not `Record<string, never>`: the latter adds
     // a string index signature, and supabase-js resolves a table as

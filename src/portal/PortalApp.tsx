@@ -104,7 +104,8 @@ function AdminRoutes() {
 }
 
 function PortalRouter() {
-  const { loading, session, role, clientId, signOut } = usePortalSession();
+  const { loading, session, role, clientId, profileError, refresh, signOut } =
+    usePortalSession();
 
   if (loading) return <FullScreenLoader />;
   if (!session) return <CodeGate />;
@@ -112,13 +113,29 @@ function PortalRouter() {
   if (role === "admin") return <AdminRoutes />;
   if (role === "client" && clientId) return <ClientRoutes clientId={clientId} />;
 
-  // Authenticated but unmapped — e.g. an auth user created before this schema.
+  // Authenticated but unmapped — either an auth user created before this schema,
+  // or the profile lookup failed. Those need different messages: the first is
+  // "ask us for access", the second is "something broke, try again".
   return (
     <div className="h-[100dvh] flex flex-col items-center justify-center gap-3 bg-background px-6 text-center">
-      <p className="font-display font-semibold">Účet zatím nemá přiřazený přístup</p>
-      <p className="text-sm text-muted-foreground max-w-xs">
-        Ozvěte se nám a přístup doplníme.
+      <p className="font-display font-semibold">
+        {profileError ? "Nepodařilo se načíst přístup" : "Účet zatím nemá přiřazený přístup"}
       </p>
+      <p className="text-sm text-muted-foreground max-w-xs">
+        {profileError ?? "Ozvěte se nám a přístup doplníme."}
+      </p>
+
+      {profileError && (
+        <button
+          type="button"
+          onClick={() => refresh()}
+          className="rounded-xl px-4 py-2 text-sm font-display text-primary-foreground"
+          style={{ background: "var(--gradient-primary)" }}
+        >
+          Zkusit znovu
+        </button>
+      )}
+
       <button
         type="button"
         onClick={signOut}

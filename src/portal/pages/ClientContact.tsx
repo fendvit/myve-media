@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Mail, MapPin, Phone, Smartphone } from "lucide-react";
+import NotificationToggle from "../components/NotificationToggle";
 import { db } from "../lib/db";
 import { usePortalSession } from "../lib/session";
 import type { PortalClient } from "../lib/types";
@@ -91,6 +92,10 @@ export default function ClientContact() {
           </div>
         </section>
       )}
+
+      <section className="bg-card border border-border rounded-3xl p-6">
+        <NotificationToggle />
+      </section>
 
       <section className="bg-card border border-border rounded-3xl p-6">
         <h3 className="font-display font-semibold mb-4">Účet</h3>

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Check, ChevronRight, Copy, Loader2, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import NotificationToggle from "../components/NotificationToggle";
 import { db } from "../lib/db";
 import { formatDate } from "../lib/format";
 import type { PortalClient, PortalProject } from "../lib/types";
@@ -138,6 +139,10 @@ export default function AdminHome() {
           </Button>
         </form>
       )}
+
+      <section className="bg-card border border-border rounded-2xl p-5">
+        <NotificationToggle />
+      </section>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 

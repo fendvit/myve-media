@@ -131,6 +131,57 @@ otevřete v anonymním okně a kód zadejte.
 Přílohy jdou do privátního bucketu `portal-attachments` pod `<client_id>/…`,
 odkazy se podepisují na hodinu.
 
+## Push notifikace
+
+Klient i vy můžete zapnout upozornění na nové zprávy — v portálu je přepínač
+(klient: **Kontakt**, vy: nahoře v seznamu klientů). Funguje i se zavřeným
+portálem.
+
+### Jak to funguje
+
+1. Prohlížeč se zaregistruje u push služby a subscription se uloží do
+   `portal_push_subscriptions` (jeden řádek na zařízení).
+2. Po odeslání zprávy zavolá odesílatelův prohlížeč funkci `send-push`.
+3. Ta ověří JWT, dohledá **protistranu** (klient napsal → všichni admini;
+   vy jste napsal → ten konkrétní klient) a rozešle notifikaci.
+4. Mrtvé subscriptions (404/410) se rovnou mažou.
+
+Volání z prohlížeče místo databázového triggeru s `pg_net` je záměr: žádné
+tajemství ve vaultu, žádná další infrastruktura. Nejhorší případ — odesílateli
+spadne karta uprostřed requestu — znamená nedoručenou notifikaci, ne
+ztracenou zprávu.
+
+### Nastavení (jednorázově)
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+**Veřejný klíč** → do `.env.local` a do Vercelu (Settings → Environment
+Variables) jako `VITE_VAPID_PUBLIC_KEY`. Je součástí buildu, takže po jeho
+přidání musíte znovu nasadit.
+
+**Privátní klíč** → jen do Supabase, nikdy do repa:
+
+```bash
+supabase secrets set VAPID_PUBLIC_KEY=xxx VAPID_PRIVATE_KEY=yyy \
+  VAPID_SUBJECT=mailto:fendvit.bis@gmail.com --project-ref nkfefurnjhupzealopym
+supabase functions deploy send-push --project-ref nkfefurnjhupzealopym
+```
+
+### Na čem to funguje
+
+| Platforma | Stav |
+| --- | --- |
+| Android Chrome/Edge | funguje i v prohlížeči |
+| Desktop Chrome/Edge/Firefox | funguje |
+| **iPhone / iPad** | **jen po „Přidat na plochu"** — Apple push webu v Safari nedává |
+
+Portál to pozná a na iOS místo přepínače rovnou ukáže návod na instalaci.
+
+`portal-sw.js` schválně **nic necachuje**. Klientský portál, který ukazuje
+zastaralý stav projektu nebo starý chat, je horší než ten, co chce připojení.
+
 ## Bezpečnost — co zbývá v linteru
 
 Supabase security linter po nasazení hlásí ještě tohle a **je to v pořádku**:
@@ -149,9 +200,6 @@ proti HaveIBeenPwned.
 
 ## Co záměrně ještě není
 
-- **Push notifikace.** Chtěly by service worker, VAPID klíče a odesílací cestu.
-  Radši nic než mrtvý přepínač v nastavení — až budete chtít, je to samostatný
-  krok a schéma na něj je připravené.
 - **Nativní appka.** Portál je teď instalovatelná PWA („Přidat na plochu").
   Na App Store / Google Play to dostane **Capacitor**, který zabalí přesně
   tenhle kód — proto ne Expo, který by znamenal přepsat celý design systém
