@@ -15,29 +15,29 @@ const STEPS = [
     number: "01",
     title: "Analýza a architektura řešení",
     body:
-      "Nezačínáme rovnou programovat. Na začátku potřebujeme do detailu pochopit váš byznys. Kdo je vaše cílová skupina a jaký problém má daný systém vlastně vyřešit? Nestavíme totiž jen hezké vizitky, ale vyvíjíme funkční nástroje. Společně definujeme hlavní funkce, rozsah projektu a logiku, na které to celé poběží.",
-    badge: { icon: Sparkles, title: "Základ úspěšného projektu", subtitle: "Nejprve strategie, potom kód." },
+      "Většina projektů selže dřív, než padne první řádek kódu — protože nikdo pořádně nezjistil, co má vlastně vyřešit. Proto začínáme u vašeho byznysu: kdo jsou vaši zákazníci, kde ztrácíte čas nebo peníze a co se musí stát, aby se investice vrátila. Výstupem je jasný rozsah, termín i cena — víte, co dostanete a za kolik, ještě než začneme.",
+    badge: { icon: Sparkles, title: "Víte, za co platíte.", subtitle: "Rozsah, termín i cena jsou jasné před začátkem prací." },
   },
   {
     number: "02",
     title: "UX/UI design a vizuální identita",
     body:
-      "Jakmile máme jasnou strategii, dáváme projektu tvář. Připravíme vizuální návrhy a navrhneme uživatelské prostředí tak, aby se v něm vaši zákazníci (nebo zaměstnanci) intuitivně orientovali. Vše s vámi průběžně konzultujeme a ladíme k dokonalosti, abychom měli jistotu, že jsme na stejné vlně.",
-    badge: { icon: Wand2, title: "Intuitivní. Přehledné. Vaše.", subtitle: "Design, který nejen vypadá skvěle, ale hlavně funguje." },
+      "Než se začne programovat, uvidíte, jak bude váš web nebo aplikace vypadat a fungovat — do posledního tlačítka. Návrhy spolu procházíme a upravujeme, dokud nesedí. Právě teď jsou změny nejrychlejší a nejlevnější; přepisovat hotový kód stojí násobně víc. Dokud návrh neschválíte, nepokračujeme dál.",
+    badge: { icon: Wand2, title: "Nic se neprogramuje bez vašeho OK.", subtitle: "Úpravy návrhu řešíme obratem, dokud nesedí." },
   },
   {
     number: "03",
     title: "Programování a zátěžové testy",
     body:
-      "Po schválení designu se pouštíme do psaní čistého kódu a projekt ožívá. V této fázi integrujeme potřebné databáze, programujeme funkce na míru a vše rovnou podrobujeme důkladnému internímu testování. Aplikace i weby musí běžet bleskově, bezpečně a bezchybně na všech zařízeních.",
-    badge: { icon: ShieldCheck, title: "Rychle, bezpečně, bezchybně.", subtitle: "Stabilní kód, rychlý výkon, špičkové zabezpečení." },
+      "Teď se staví. Píšeme vlastní kód, napojujeme databáze a integrace a průběžně testujeme na mobilech, tabletech i desktopech. Nestavíme na šabloně, která vás za rok zastaví — řešení jde kdykoliv rozšířit o další funkce. Po celou dobu víte, v jaké fázi jsme, a na zprávu odpovídáme do 24 hodin.",
+    badge: { icon: ShieldCheck, title: "Rychlé, bezpečné a rozšiřitelné.", subtitle: "Vlastní kód, na kterém se dá stavět dál — ne šablona." },
   },
   {
     number: "04",
     title: "Finální revize a nasazení do světa",
     body:
-      "Než cokoliv definitivně vypustíme do ostrého provozu, předáváme vám testovací verzi. V klidu si vše proklikáte a zkontrolujete, zda systém funguje přesně podle vašich představ. Pokud objevíme detaily k úpravě, obratem je vyřešíme. Jakmile od vás dostaneme zelenou, projekt slavnostně spouštíme.",
-    badge: { icon: CheckCircle2, title: "Vše pod kontrolou.", subtitle: "Pečlivě testujeme, doladíme a spouštíme bez kompromisů." },
+      "Testovací verzi dostanete dřív, než ji uvidí kterýkoliv z vašich zákazníků. V klidu si všechno proklikáte a co nesedí, doladíme. Spouštíme až ve chvíli, kdy řeknete, že je to hotové. A po spuštění nekončíme — ozvat se můžete kdykoliv, když bude potřeba cokoliv upravit nebo doplnit.",
+    badge: { icon: CheckCircle2, title: "Spouštíme, až řeknete vy.", subtitle: "Testovací verzi vidíte první — a po spuštění nezůstanete sami." },
   },
 ];
 
@@ -377,7 +377,7 @@ const HowWeWork = () => {
     <div className="min-h-screen bg-background">
       <Seo
         title="Jak to děláme — Proces vývoje | MYVE"
-        description="Jak v MYVE postupujeme od analýzy a designu po programování, testování a nasazení. Transparentní proces vývoje webů a aplikací."
+        description="Čtyři kroky od zadání ke spuštění — s jasným rozsahem, termínem i cenou předem. Podívejte se, jak v MYVE vyvíjíme weby, aplikace a software na míru."
         path="/jak-to-delame"
       />
       <Navbar />
@@ -400,7 +400,7 @@ const HowWeWork = () => {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="font-display text-4xl md:text-5xl lg:text-6xl font-bold mb-8 leading-tight"
           >
-            Jak u nás probíhá vývoj
+            Od zadání ke spuštění. Bez překvapení.
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 30 }}
@@ -408,9 +408,10 @@ const HowWeWork = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="font-body text-lg md:text-xl text-muted-foreground leading-relaxed"
           >
-            Ať už pro vás stavíme moderní web, komplexní webovou aplikaci, nebo rovnou software na
-            míru, věříme, že by celý proces měl dávat smysl a mít jasný řád. Nejsme korporát, kde se
-            ztratíte v tabulkách. Zakládáme si na tom, že přesně víte, na čem zrovna pracujeme.
+            U vývoje se firmy nejčastěji bojí tří věcí: že se to potáhne měsíce, že cena poletí
+            jinam, než zněla nabídka, a že nakonec dostanou něco jiného, než čekaly. Proto má náš
+            proces čtyři kroky s jasným výstupem — víte, co se právě děje, co dostanete a kdy.
+            Běžný web spouštíme v průměru za 14 dní a na každou zprávu odpovídáme do 24 hodin.
           </motion.p>
 
           <motion.div
@@ -457,10 +458,12 @@ const HowWeWork = () => {
       <section className="py-20 lg:py-28">
         <div className="container mx-auto px-6 max-w-3xl text-center">
           <h2 className="font-display text-3xl md:text-4xl font-bold mb-4">
-            Pojďme váš projekt rozhýbat
+            První krok je jednodušší, než čekáte
           </h2>
           <p className="text-muted-foreground text-lg mb-8 leading-relaxed">
-            Domluvíme si nezávaznou konzultaci a probereme, jak by váš projekt mohl vypadat.
+            Napište nám pár vět o projektu. Do 24 hodin se ozveme a řekneme vám na rovinu, co by to
+            obnášelo, jak dlouho by to trvalo a kolik by to stálo — i kdyby závěr měl být, že to
+            zatím nepotřebujete. Konzultace je zdarma a nezávazná.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <ConsultationDialog>
