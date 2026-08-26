@@ -72,6 +72,13 @@ export type PortalReadState = {
   updates_seen_at: string;
 };
 
+/** Presence of a row means this person closed the welcome notice on that project. */
+export type PortalWelcomeDismissal = {
+  user_id: string;
+  project_id: string;
+  dismissed_at: string;
+};
+
 /** One row per visible client, returned by the portal_unread_summary() RPC. */
 export type PortalUnreadRow = {
   client_id: string;
@@ -128,6 +135,12 @@ export type PortalDatabase = {
         PortalReadState,
         { user_id: string; client_id: string } & Partial<
           Omit<PortalReadState, "user_id" | "client_id">
+        >
+      >;
+      portal_welcome_dismissals: Table<
+        PortalWelcomeDismissal,
+        { user_id: string; project_id: string } & Partial<
+          Omit<PortalWelcomeDismissal, "user_id" | "project_id">
         >
       >;
       portal_push_subscriptions: Table<

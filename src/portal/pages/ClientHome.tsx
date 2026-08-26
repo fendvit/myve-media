@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ExternalLink, Loader2, Sparkles } from "lucide-react";
 import UpdateBody from "../components/UpdateBody";
+import WelcomeNotice from "../components/WelcomeNotice";
 import { db, supabase } from "../lib/db";
 import { formatDate, relativeFromNow } from "../lib/format";
 import { statusTone } from "../lib/status";
@@ -38,12 +39,17 @@ function OverviewRow({ label, value }: { label: string; value: React.ReactNode }
 }
 
 export default function ClientHome() {
-  const { clientId } = usePortalSession();
+  const { clientId, session } = usePortalSession();
   const { markUpdatesSeen } = usePortalUnread();
   const [projects, setProjects] = useState<PortalProject[]>([]);
   const [updates, setUpdates] = useState<PortalUpdate[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  // Projects whose welcome notice this person has already closed. Starts as
+  // null — "not known yet" — so the notice never flashes on screen for a
+  // project that was dismissed months ago while the lookup is still in flight.
+  const [dismissedWelcome, setDismissedWelcome] = useState<Set<string> | null>(null);
+  const userId = session?.user?.id ?? null;
 
   useEffect(() => {
     if (!clientId) return;
@@ -66,6 +72,45 @@ export default function ClientHome() {
       active = false;
     };
   }, [clientId]);
+
+  useEffect(() => {
+    if (!userId) return;
+    let active = true;
+
+    // Every dismissal for this person in one round trip, not one query per
+    // project switch — the list is at most a handful of rows.
+    db.from("portal_welcome_dismissals")
+      .select("project_id")
+      .eq("user_id", userId)
+      .then(({ data, error }) => {
+        if (!active) return;
+        // A failed lookup stays `null`, which keeps the notice hidden. Showing
+        // one someone already closed is the single outcome this feature
+        // promises won't happen; withholding it from a new client until the
+        // next load is recoverable noise.
+        if (error) return;
+        const rows = (data as { project_id: string }[]) ?? [];
+        setDismissedWelcome(new Set(rows.map((row) => row.project_id)));
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [userId]);
+
+  const dismissWelcome = useCallback(
+    async (projectId: string) => {
+      if (!userId) return;
+      // Optimistic: the notice closes on the click, and the row is what keeps
+      // it closed on the next visit. A failed insert only means it comes back
+      // later, which beats a spinner on a dismiss button.
+      setDismissedWelcome((current) => new Set(current ?? []).add(projectId));
+      await db
+        .from("portal_welcome_dismissals")
+        .insert({ user_id: userId, project_id: projectId });
+    },
+    [userId],
+  );
 
   useEffect(() => {
     if (!activeId) {
@@ -147,6 +192,13 @@ export default function ClientHome() {
   // project row's own updated_at (bumped whenever the admin edits it).
   const lastTouchedAt = updates[0]?.created_at ?? active.updated_at;
 
+  // Only one of the two layouts below is ever on screen, so rendering the
+  // notice in both is a duplicate node, not a duplicate notice.
+  const showWelcome = dismissedWelcome !== null && !dismissedWelcome.has(active.id);
+  const welcome = showWelcome ? (
+    <WelcomeNotice onDismiss={() => void dismissWelcome(active.id)} />
+  ) : null;
+
   const switcher =
     projects.length > 1 ? (
       <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
@@ -182,6 +234,7 @@ export default function ClientHome() {
           compact timeline, both scrolling together. */}
       <div className="lg:hidden space-y-5 portal-rise">
         {switcher}
+        {welcome}
 
         <section
           className="bg-card border border-border rounded-3xl p-6"
@@ -264,6 +317,7 @@ export default function ClientHome() {
           the content column so it stays visible under a long report feed. */}
       <div className="hidden lg:block lg:pb-28 portal-rise">
         {switcher !== null && <div className="mb-6">{switcher}</div>}
+        {welcome !== null && <div className="mb-6">{welcome}</div>}
 
         <h1 className="font-display text-3xl font-bold tracking-tight">{active.name}</h1>
         {active.description && (
