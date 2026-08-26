@@ -161,12 +161,23 @@ npx web-push generate-vapid-keys
 Variables) jako `VITE_VAPID_PUBLIC_KEY`. Je součástí buildu, takže po jeho
 přidání musíte znovu nasadit.
 
-**Privátní klíč** → jen do Supabase, nikdy do repa:
+**Privátní klíč** → jen do Supabase, nikdy do repa. Vše na **jednom řádku** —
+PowerShell nezná `\` jako pokračování řádku (bere ho jako další argument, což
+skončí chybou „Invalid secret pair"). Hodnoty v uvozovkách, aby se `@` a `:`
+nerozbily:
 
-```bash
-supabase secrets set VAPID_PUBLIC_KEY=xxx VAPID_PRIVATE_KEY=yyy \
-  VAPID_SUBJECT=mailto:fendvit.bis@gmail.com --project-ref nkfefurnjhupzealopym
+```powershell
+supabase secrets set "VAPID_PUBLIC_KEY=xxx" "VAPID_PRIVATE_KEY=yyy" "VAPID_SUBJECT=mailto:fendvit.bis@gmail.com" --project-ref nkfefurnjhupzealopym
+```
+
+```powershell
 supabase functions deploy send-push --project-ref nkfefurnjhupzealopym
+```
+
+Kontrola, že se secrets uložily:
+
+```powershell
+supabase secrets list --project-ref nkfefurnjhupzealopym
 ```
 
 ### Na čem to funguje
