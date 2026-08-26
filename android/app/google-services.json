@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "9745225076",
+    "project_id": "myve-klienti",
+    "storage_bucket": "myve-klienti.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:9745225076:android:07c7dbd003a3788dcf0821",
+        "android_client_info": {
+          "package_name": "media.myve.portal"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAaNbY-ev0fX6EKmrANPhzTa1ZujP2dfo4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

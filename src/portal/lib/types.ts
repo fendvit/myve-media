@@ -86,12 +86,18 @@ export type PortalUnreadRow = {
   unread_updates: number;
 };
 
+/** Where a device is reached: `web` uses Web Push, the rest use FCM. */
+export type PortalPushPlatform = "web" | "android" | "ios";
+
 export type PortalPushSubscription = {
   id: string;
   user_id: string;
+  /** Push-service URL when platform is `web`, an FCM registration token otherwise. */
   endpoint: string;
-  p256dh: string;
-  auth: string;
+  platform: PortalPushPlatform;
+  /** Web Push only — FCM has no per-subscription key pair. */
+  p256dh: string | null;
+  auth: string | null;
   user_agent: string | null;
   created_at: string;
 };
@@ -145,8 +151,10 @@ export type PortalDatabase = {
       >;
       portal_push_subscriptions: Table<
         PortalPushSubscription,
-        { user_id: string; endpoint: string; p256dh: string; auth: string } & Partial<
-          Omit<PortalPushSubscription, "user_id" | "endpoint" | "p256dh" | "auth">
+        // p256dh/auth stay optional here because they're required for web rows
+        // and forbidden for native ones; a check constraint enforces the pairing.
+        { user_id: string; endpoint: string; platform: PortalPushPlatform } & Partial<
+          Omit<PortalPushSubscription, "user_id" | "endpoint" | "platform">
         >
       >;
     };

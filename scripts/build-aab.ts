@@ -94,11 +94,16 @@ execFileSync(wrapper, [...wrapperArgs, "bundleRelease"], {
   stdio: "inherit",
 });
 
-const aab = path.join(ANDROID, "app/build/outputs/bundle/release/app-release.aab");
+// Gradle writes outside the repo to stay clear of OneDrive's file locking —
+// this must match the buildRoot logic in android/build.gradle.
+const buildRoot =
+  process.env.MYVE_ANDROID_BUILD_DIR ?? path.join(os.homedir(), ".gradle-builds", "myve-portal");
+const aab = path.join(buildRoot, "app", "outputs", "bundle", "release", "app-release.aab");
+
 if (!fs.existsSync(aab)) {
-  console.error("Gradle finished but no bundle was produced.");
+  console.error(`Gradle finished but no bundle was produced at ${aab}`);
   process.exit(1);
 }
 
 const mb = (fs.statSync(aab).size / 1024 / 1024).toFixed(1);
-console.log(`\n${signed ? "Signed" : "UNSIGNED"} bundle (${mb} MB): ${path.relative(process.cwd(), aab)}`);
+console.log(`\n${signed ? "Signed" : "UNSIGNED"} bundle (${mb} MB): ${aab}`);

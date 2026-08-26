@@ -17,13 +17,25 @@ buildscript {
 
 apply from: "variables.gradle"
 
+// Build output goes outside the repo, because the repo lives in a OneDrive
+// folder. OneDrive syncs the intermediates as Gradle writes them, holds the
+// files open, and Gradle then fails the next build with
+// "Unable to delete directory ... a process has files open" — repeatedly, and
+// on a different directory each time.
+//
+// Override with MYVE_ANDROID_BUILD_DIR. If the repo ever moves off OneDrive
+// this can go, and build output returns to the conventional android/*/build.
+def buildRoot = System.getenv("MYVE_ANDROID_BUILD_DIR")
+    ?: new File(System.getProperty("user.home"), ".gradle-builds/myve-portal").absolutePath
+
 allprojects {
     repositories {
         google()
         mavenCentral()
     }
+    layout.buildDirectory = new File(buildRoot, project.path.replace(':', '_').replaceAll('^_', '') ?: 'root')
 }
 
 task clean(type: Delete) {
-    delete rootProject.buildDir
+    delete rootProject.layout.buildDirectory
 }

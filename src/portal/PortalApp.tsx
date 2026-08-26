@@ -6,7 +6,9 @@ import {
   Route,
   Routes,
   useLocation,
+  useNavigate,
 } from "react-router-dom";
+import { Capacitor } from "@capacitor/core";
 import { Home, Loader2, MessageCircle, Phone, Users } from "lucide-react";
 import CodeGate from "./components/CodeGate";
 import Chat from "./components/Chat";
@@ -19,6 +21,7 @@ import { db } from "./lib/db";
 import { PortalSessionProvider, usePortalSession } from "./lib/session";
 import { PortalThemeProvider } from "./lib/theme";
 import { PortalUnreadProvider, usePortalUnread } from "./lib/unread";
+import { onNotificationTap } from "./lib/push-native";
 import type { PortalClient } from "./lib/types";
 
 const CLIENT_NAV: Omit<NavItem, "badge">[] = [
@@ -173,6 +176,35 @@ function PortalRouter() {
   );
 }
 
+/**
+ * Opens the screen a tapped notification refers to. Lives inside the router
+ * because it needs useNavigate, and is inert on the web build — there the
+ * service worker handles the click instead.
+ */
+function NativeNotificationRouting() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    let dispose: (() => void) | undefined;
+    let cancelled = false;
+
+    void onNotificationTap((path) => navigate(path)).then((off) => {
+      // The effect can be torn down before the listener finishes attaching.
+      if (cancelled) off();
+      else dispose = off;
+    });
+
+    return () => {
+      cancelled = true;
+      dispose?.();
+    };
+  }, [navigate]);
+
+  return null;
+}
+
 export default function PortalApp() {
   return (
     <PortalThemeProvider>
@@ -180,6 +212,7 @@ export default function PortalApp() {
         {/* Inside the session provider: the counts are per signed-in user. */}
         <PortalUnreadProvider>
           <BrowserRouter>
+            <NativeNotificationRouting />
             <PortalRouter />
           </BrowserRouter>
         </PortalUnreadProvider>

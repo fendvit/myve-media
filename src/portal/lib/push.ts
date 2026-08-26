@@ -1,12 +1,12 @@
 import { Capacitor } from "@capacitor/core";
 import { db, supabase } from "./db";
+import { disableNativePush, enableNativePush, getNativePushState } from "./push-native";
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
 
 export type PushState =
   | "unsupported" // browser can't do web push (or iOS Safari outside an installed app)
   | "needs-install" // iOS: only works once added to the home screen
-  | "native-pending" // Capacitor shell: needs FCM/APNs, not web push
   | "denied" // user blocked notifications at the browser level
   | "off"
   | "on";
@@ -53,9 +53,8 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
 }
 
 export async function getPushState(): Promise<PushState> {
-  // Say so plainly rather than falling through to "unsupported", which would
-  // blame the browser for something that simply isn't wired up yet.
-  if (Capacitor.isNativePlatform()) return "native-pending";
+  // Native devices go through FCM; the browser APIs below don't exist there.
+  if (Capacitor.isNativePlatform()) return getNativePushState();
   if (!pushSupported()) {
     // iOS only exposes PushManager once the site is installed to the home
     // screen, so tell the user that rather than calling it unsupported.
@@ -69,6 +68,7 @@ export async function getPushState(): Promise<PushState> {
 }
 
 export async function enablePush(): Promise<PushState> {
+  if (Capacitor.isNativePlatform()) return enableNativePush();
   if (!VAPID_PUBLIC_KEY) {
     throw new Error("Chybí VITE_VAPID_PUBLIC_KEY.");
   }
@@ -100,6 +100,7 @@ export async function enablePush(): Promise<PushState> {
     {
       user_id: userId,
       endpoint: subscription.endpoint,
+      platform: "web",
       p256dh: json.keys?.p256dh ?? arrayBufferToBase64(subscription.getKey("p256dh")),
       auth: json.keys?.auth ?? arrayBufferToBase64(subscription.getKey("auth")),
       user_agent: navigator.userAgent,
@@ -112,6 +113,7 @@ export async function enablePush(): Promise<PushState> {
 }
 
 export async function disablePush(): Promise<PushState> {
+  if (Capacitor.isNativePlatform()) return disableNativePush();
   const registration = await navigator.serviceWorker.getRegistration("/");
   const subscription = await registration?.pushManager.getSubscription();
   if (!subscription) return "off";

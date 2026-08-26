@@ -1,4 +1,8 @@
-// Sends a Web Push notification to the *other* side of a portal conversation.
+// Notifies the *other* side of a portal conversation about a new message.
+//
+// Two transports, chosen per subscription row: Web Push for browsers, FCM for
+// the Capacitor app (see fcm.ts). Web Push doesn't work inside a WebView, and
+// FCM can't reach a desktop browser, so both have to exist.
 //
 // Called by the sender's browser right after a message row is inserted. That is
 // deliberately simpler than a database trigger with pg_net: no vault secrets, no
@@ -10,6 +14,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.48.1";
 import webpush from "npm:web-push@3.6.7";
+import { fcmConfigured, sendFcm } from "./fcm.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -117,7 +122,7 @@ Deno.serve(async (req) => {
 
     const { data: subscriptions } = await admin
       .from("portal_push_subscriptions")
-      .select("id, endpoint, p256dh, auth")
+      .select("id, endpoint, platform, p256dh, auth")
       .in("user_id", recipientIds);
 
     if (!subscriptions || subscriptions.length === 0) {
@@ -127,12 +132,18 @@ Deno.serve(async (req) => {
     // --- send --------------------------------------------------------------
     webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
-    const payload = JSON.stringify({
+    const notification = {
       title,
       body: preview(message.body, Boolean(message.attachment_url)),
       url,
       tag: `portal-${message.client_id}`,
-    });
+    };
+    const payload = JSON.stringify(notification);
+
+    // Native rows can exist before Firebase is configured. Skipping them keeps
+    // web push working instead of failing the whole request for everyone.
+    const canSendNative = fcmConfigured();
+    let skippedNative = 0;
 
     let sent = 0;
     const stale: string[] = [];
@@ -141,9 +152,28 @@ Deno.serve(async (req) => {
       subscriptions.map(async (sub: {
         id: string;
         endpoint: string;
-        p256dh: string;
-        auth: string;
+        platform: string;
+        p256dh: string | null;
+        auth: string | null;
       }) => {
+        if (sub.platform !== "web") {
+          if (!canSendNative) {
+            skippedNative += 1;
+            return;
+          }
+          const result = await sendFcm(sub.endpoint, notification);
+          if (result === "sent") sent += 1;
+          else if (result === "stale") stale.push(sub.id);
+          return;
+        }
+
+        if (!sub.p256dh || !sub.auth) {
+          // A check constraint should make this impossible; if it happens the
+          // row is unusable, so drop it rather than throwing on every message.
+          stale.push(sub.id);
+          return;
+        }
+
         try {
           await webpush.sendNotification(
             { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
@@ -155,7 +185,7 @@ Deno.serve(async (req) => {
           // so we stop retrying a dead endpoint forever.
           const status = (err as { statusCode?: number }).statusCode;
           if (status === 404 || status === 410) stale.push(sub.id);
-          else console.error("push send failed", status, err);
+          else console.error("web push send failed", status, err);
         }
       }),
     );
@@ -164,7 +194,11 @@ Deno.serve(async (req) => {
       await admin.from("portal_push_subscriptions").delete().in("id", stale);
     }
 
-    return json({ sent, pruned: stale.length });
+    if (skippedNative > 0) {
+      console.warn(`skipped ${skippedNative} native device(s): FCM_SERVICE_ACCOUNT not set`);
+    }
+
+    return json({ sent, pruned: stale.length, skippedNative });
   } catch (err) {
     console.error("send-push failed", err);
     return json({ error: "send failed" }, 500);

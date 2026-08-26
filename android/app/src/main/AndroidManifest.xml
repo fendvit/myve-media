@@ -32,4 +32,12 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!--
+      Required from Android 13 (API 33) on, and this app targets 35. The
+      @capacitor/push-notifications manifest declares only the messaging
+      service, not this permission — without it requestPermissions() reports
+      denied without ever prompting, and no notification is ever shown.
+    -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 </manifest>

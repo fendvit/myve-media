@@ -54,18 +54,6 @@ export default function NotificationToggle() {
     );
   }
 
-  if (state === "native-pending") {
-    return (
-      <div className="flex items-start gap-3">
-        <BellOff className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          Upozornění v aplikaci zatím připravujeme. Zapnout si je můžete
-          v portálu v prohlížeči.
-        </p>
-      </div>
-    );
-  }
-
   if (state === "unsupported") {
     return (
       <div className="flex items-start gap-3">

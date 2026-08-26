@@ -41,6 +41,12 @@ SCREENSHOTS OF THE OLD WEBSITE/
 *.keystore
 keystore.properties
 
+# Firebase service account keys. These grant admin access to the whole Firebase
+# project; the console downloads them with a generated name, so match the shape
+# rather than one filename.
+*firebase-adminsdk*.json
+service-account*.json
+
 # Local Claude Code permissions (machine-specific)
 .claude/settings.local.json
 

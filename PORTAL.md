@@ -422,16 +422,60 @@ je-li rozdělaná, build rovnou zastaví, aby nepadal až v Gradlu.
 Certifikát je platný do roku 2054 (Play vyžaduje aspoň do října 2033).
 `versionCode` je zatím `1` — před každým dalším uploadem ho zvyš.
 
+### Push notifikace — kód hotový, chybí Firebase
+
+Web Push ve WebView nefunguje, takže nativní zařízení jdou přes **FCM**. Kód je
+napsaný, ale bez projektu ve Firebase se nespojí. Co zbývá udělat rukama:
+
+1. Založit projekt ve [Firebase](https://console.firebase.google.com/), přidat
+   Android appku s package name **`media.myve.portal`**.
+2. Stáhnout `google-services.json` a dát ho do **`android/app/`**. Bez něj se
+   appka postaví, ale registrace tokenu selže (`registrationError`).
+3. Ve Firebase → Project settings → Service accounts vygenerovat privátní klíč
+   a uložit ho do Supabase secrets. **V PowerShellu jako base64, na jeden řádek**:
+
+   ```
+   supabase secrets set "FCM_SERVICE_ACCOUNT=$([Convert]::ToBase64String([IO.File]::ReadAllBytes('service-account.json')))"
+   ```
+
+   `$(cat soubor.json)` **nefunguje**: PowerShell vrátí pole řádků a rozstřelí je
+   na samostatné argumenty, takže CLI spadne na `Invalid secret pair: PRIVATE`.
+   base64 projde jakýmkoliv shellem. `fcm.ts` bere obě podoby — čistý JSON
+   (hodí se pro vložení přes dashboard) i base64.
+4. Nasadit migraci `20260826170000_portal_push_native_tokens.sql`
+   a funkci `send-push`.
+
+**Instrukce z Firebase konzole o Gradle přeskoč.** Ukazují Kotlin DSL
+(`build.gradle.kts`) pro čerstvý projekt v Android Studiu. Tenhle projekt má
+Groovy DSL a Capacitor už všechno zapojil: `classpath com.google.gms:google-services`
+je v `android/build.gradle` a `android/app/build.gradle` plugin aplikuje sám,
+jakmile `google-services.json` existuje. `firebase-messaging` táhne
+`@capacitor/push-notifications`. Kopírovat to z konzole by vyrobilo duplicitní
+deklarace.
+
+**Klíč od service accountu je admin přístup k celému Firebase projektu.** Patří
+mimo repo, vedle podpisového klíče (`~/.keys/myve-android/`) — `.gitignore` ho
+sice pokrývá (`*firebase-adminsdk*.json`), ale OneDrive gitignore nezajímá.
+
+Jak to je poskládané:
+
+- `portal_push_subscriptions.endpoint` je teď **obecná adresa** — URL push služby
+  pro web, FCM token pro nativ — a `platform` říká, kterou cestou poslat.
+  `p256dh`/`auth` jsou jen pro web; check constraint hlídá, aby web řádek klíče
+  měl a nativní neměl.
+- `send-push` větví podle `platform`. Když `FCM_SERVICE_ACCOUNT` chybí, nativní
+  zařízení **přeskočí a web push pošle dál** — jinak by nenasazená Firebase
+  shodila notifikace i lidem v prohlížeči.
+- FCM v1 chce OAuth2 token podepsaný service accountem, ne starý server key.
+  Podepisování JWT a výměna za access token (cachovaný na hodinu) je
+  v `supabase/functions/send-push/fcm.ts`.
+- `POST_NOTIFICATIONS` je ručně v `AndroidManifest.xml`. Plugin ho **nedeklaruje**
+  a od Androidu 13 bez něj `requestPermissions()` vrátí `denied`, aniž by se
+  na cokoliv zeptal — appka cílí na 35, takže by to tiše nefungovalo všude.
+
 ### Co je potřeba dodělat
 
-1. **Push notifikace — hlavní kus práce.** Web Push (service worker + VAPID)
-   v Capacitoru na iOS **nefunguje vůbec** a na Androidu je nespolehlivý.
-   Nativně se musí přes `@capacitor/push-notifications` → FCM (Android) + APNs
-   (iOS). To znamená: jiný typ tokenu v `portal_push_subscriptions`, větev
-   v `send-push` (web-push vs. FCM/APNs), účet Apple Developer (2 500 Kč/rok)
-   a projekt ve Firebase. Zatím `getPushState()` na nativu vrací
-   `native-pending` a přepínač to říká na rovinu místo aby předstíral, že to jde.
-2. **Přílohy.** `target="_blank"` na podepsané odkazy chce `@capacitor/browser`,
+1. **Přílohy.** `target="_blank"` na podepsané odkazy chce `@capacitor/browser`,
    jinak se soubor otevře uvnitř appky nebo vůbec. Focení přílohy chce
    `@capacitor/camera`.
 3. **iOS.** `cap add ios` potřebuje macOS a účet Apple Developer.
