@@ -1,0 +1,110 @@
+// Hand-written types for the portal tables.
+//
+// src/integrations/supabase/types.ts is generated from the marketing schema and
+// gets overwritten, so the portal keeps its own definitions instead of editing
+// that file. Shape matches supabase/migrations/20260826120000_portal_schema.sql.
+
+export type PortalRole = "admin" | "client";
+export type SenderRole = "admin" | "client";
+
+// All row shapes are `type` aliases rather than interfaces on purpose:
+// supabase-js constrains a table's Row/Insert/Update to `Record<string, unknown>`,
+// and only type aliases get TypeScript's implicit index signature. Declared as
+// interfaces they fail that constraint and every query silently degrades to
+// `never` — which shows up as "not assignable to parameter of type 'never'".
+
+export type PortalClient = {
+  id: string;
+  name: string;
+  contact_email: string | null;
+  contact_phone: string | null;
+  access_code: string;
+  auth_user_id: string | null;
+  archived: boolean;
+  created_at: string;
+};
+
+export type PortalProject = {
+  id: string;
+  client_id: string;
+  name: string;
+  description: string | null;
+  status: string;
+  progress: number;
+  live_url: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PortalUpdate = {
+  id: string;
+  project_id: string;
+  title: string | null;
+  body: string;
+  created_at: string;
+};
+
+export type PortalMessage = {
+  id: string;
+  client_id: string;
+  sender_role: SenderRole;
+  sender_user_id: string | null;
+  body: string | null;
+  attachment_url: string | null;
+  attachment_name: string | null;
+  created_at: string;
+  read_at: string | null;
+};
+
+export type PortalProfile = {
+  user_id: string;
+  role: PortalRole;
+  client_id: string | null;
+};
+
+type Table<Row, Insert = Partial<Row>, Update = Partial<Row>> = {
+  Row: Row;
+  Insert: Insert;
+  Update: Update;
+  Relationships: [];
+};
+
+// A `type` alias, not an `interface`: supabase-js matches this against
+// `GenericSchema` (a Record<string, …>), and only type aliases get TypeScript's
+// implicit index signature. As an interface the schema resolves to `never`.
+export type PortalDatabase = {
+  __InternalSupabase: {
+    PostgrestVersion: "14.1";
+  };
+  public: {
+    Tables: {
+      portal_clients: Table<
+        PortalClient,
+        { name: string } & Partial<Omit<PortalClient, "name">>
+      >;
+      portal_projects: Table<
+        PortalProject,
+        { client_id: string; name: string } & Partial<Omit<PortalProject, "client_id" | "name">>
+      >;
+      portal_updates: Table<
+        PortalUpdate,
+        { project_id: string; body: string } & Partial<Omit<PortalUpdate, "project_id" | "body">>
+      >;
+      portal_messages: Table<
+        PortalMessage,
+        { client_id: string; sender_role: SenderRole } & Partial<
+          Omit<PortalMessage, "client_id" | "sender_role">
+        >
+      >;
+      portal_profiles: Table<PortalProfile>;
+    };
+    // `{ [_ in never]: never }` and not `Record<string, never>`: the latter adds
+    // a string index signature, and supabase-js resolves a table as
+    // `(Tables & Views)[Name]` — which would collapse every table to `never`.
+    Views: { [_ in never]: never };
+    Functions: { [_ in never]: never };
+    Enums: { [_ in never]: never };
+    CompositeTypes: { [_ in never]: never };
+  };
+}

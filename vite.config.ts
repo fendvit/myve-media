@@ -18,4 +18,14 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      // Two independent apps from one codebase: the marketing site and the
+      // client portal served at portal.myve.media (see vercel.json).
+      input: {
+        main: path.resolve(__dirname, "index.html"),
+        portal: path.resolve(__dirname, "portal.html"),
+      },
+    },
+  },
 }));

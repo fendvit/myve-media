@@ -1,1 +1,8 @@
-project_id = "gewjbombgrhqlebkwcjq"
+# Was "gewjbombgrhqlebkwcjq", which is not the project this site runs against.
+# The live project is "Myve Media" — same ref as VITE_SUPABASE_URL in .env.local.
+project_id = "nkfefurnjhupzealopym"
+
+# The code gate is called by visitors who have no session yet, so this one
+# function must be reachable without a JWT. It does its own rate limiting.
+[functions.redeem-code]
+verify_jwt = false

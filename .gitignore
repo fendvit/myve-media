@@ -34,3 +34,6 @@ SCREENSHOTS OF THE OLD WEBSITE/
 
 # Local Claude Code permissions (machine-specific)
 .claude/settings.local.json
+
+# Supabase CLI scratch state (linked project ref, version checks)
+supabase/.temp/
