@@ -7,6 +7,11 @@
     "dev": "vite",
     "build": "vite build",
     "build:dev": "vite build --mode development",
+    "build:native": "vite build --mode native",
+    "icons": "tsx scripts/generate-app-icons.ts",
+    "sync:native": "npm run build:native && cap sync android",
+    "build:aab": "npm run sync:native && tsx scripts/build-aab.ts",
+    "open:android": "cap open android",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
@@ -15,6 +20,9 @@
     "prebuild": "tsx scripts/generate-sitemap.ts"
   },
   "dependencies": {
+    "@capacitor/android": "^7.6.8",
+    "@capacitor/cli": "^7.6.8",
+    "@capacitor/core": "^7.6.8",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
@@ -77,6 +85,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@eslint/js": "^9.32.0",
     "@tailwindcss/typography": "^0.5.19",
     "@testing-library/jest-dom": "^6.6.0",

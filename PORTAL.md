@@ -381,6 +381,47 @@ z toho, co je níž, ten závěr nemění — jen upřesňuje, kolik práce zbý
 | Bezpečné zóny (výřez, home indicator) | `env(safe-area-inset-*)` a `viewport-fit=cover` už v kódu jsou |
 | Mobilní rozvržení | spodní záložky a horní lišta jsou appka už teď |
 
+### Android — hotovo (26. 8. 2026)
+
+Capacitor je nastavený a `android/` projekt se staví. Příkazy:
+
+| Příkaz | Co dělá |
+| --- | --- |
+| `npm run build:native` | postaví **jen** portál do `dist-native/` |
+| `npm run sync:native` | totéž + `cap sync android` |
+| `npm run build:aab` | celý řetěz až po AAB pro Play |
+| `npm run icons` | přegeneruje ikony z `public/favicon.png` |
+| `npm run open:android` | otevře projekt v Android Studiu |
+
+Tři věci, které na tom nejsou zřejmé:
+
+1. **`--mode native` staví do `dist-native/` a přejmenuje `portal.html`
+   na `index.html`.** WebView otevírá dokument v kořeni, takže bez přejmenování
+   naběhne prázdná obrazovka. Dělá to plugin `nativePayload` ve `vite.config.ts`.
+2. **Nativní build vypíná `publicDir`.** V `public/` je ~40 MB marketingových
+   frames a videí, které portál nikdy nenačte — zkopírovaná dovnitř dělala 98 %
+   payloadu (41 MB → 1,1 MB). Zpátky se kopíruje jen allowlist ve `vite.config.ts`.
+3. **Cesta k repu má diakritiku** (`Střední škola…`, `soukromé`), což Android
+   Gradle Plugin na Windows odmítá. Řeší to `android.overridePathCheck=true`
+   v `android/gradle.properties`. Funguje to, ale Google to označuje za
+   nepodporované — když nativní build začne selhávat divně, hledej to tady první.
+
+**Podepisování**: klíč a hesla jsou **mimo repo**, v `~/.keys/myve-android/`
+(`myve-upload.jks` + `keystore.properties`). Ne kvůli gitu — ten je řeší
+`.gitignore` — ale kvůli **OneDrivu**: celá pracovní kopie se synchronizuje do
+cloudu a na všechny počítače pod účtem, a podpisový klíč je jediná věc, která
+se nedá rotovat. Jinou cestu nastavíš proměnnou `MYVE_KEYSTORE_PROPERTIES`;
+čtou ji `android/app/build.gradle` i `scripts/build-aab.ts`.
+`android/keystore.properties.example` je návod včetně `keytool` příkazu.
+
+Bez toho souboru se AAB postaví **nepodepsaný** — Gradle to hlásí jako úspěch
+a Play to odmítne až při uploadu. `npm run build:aab` proto podpis kontroluje
+sám: chybí-li konfigurace úplně, jen varuje (hodí se na lokální testování);
+je-li rozdělaná, build rovnou zastaví, aby nepadal až v Gradlu.
+
+Certifikát je platný do roku 2054 (Play vyžaduje aspoň do října 2033).
+`versionCode` je zatím `1` — před každým dalším uploadem ho zvyš.
+
 ### Co je potřeba dodělat
 
 1. **Push notifikace — hlavní kus práce.** Web Push (service worker + VAPID)
@@ -388,19 +429,16 @@ z toho, co je níž, ten závěr nemění — jen upřesňuje, kolik práce zbý
    Nativně se musí přes `@capacitor/push-notifications` → FCM (Android) + APNs
    (iOS). To znamená: jiný typ tokenu v `portal_push_subscriptions`, větev
    v `send-push` (web-push vs. FCM/APNs), účet Apple Developer (2 500 Kč/rok)
-   a projekt ve Firebase.
-2. **Build jen pro portál.** Vite teď staví dva vstupy (`index.html` marketing
-   + `portal.html`). Nativní build musí obsahovat **jen** portál a mít ho
-   v kořeni — jinak se v appce otevře marketingový web. (Přesně to se stane
-   i lokálně, když v dev serveru načtete `/` místo `/portal.html`.)
-3. **Service worker vypnout na nativu.** `portal-sw.js` se registruje při startu;
-   v Capacitoru je zbytečný a jen zdroj chyb — obalit `Capacitor.isNativePlatform()`.
-4. **Přílohy.** `target="_blank"` na podepsané odkazy chce `@capacitor/browser`,
+   a projekt ve Firebase. Zatím `getPushState()` na nativu vrací
+   `native-pending` a přepínač to říká na rovinu místo aby předstíral, že to jde.
+2. **Přílohy.** `target="_blank"` na podepsané odkazy chce `@capacitor/browser`,
    jinak se soubor otevře uvnitř appky nebo vůbec. Focení přílohy chce
    `@capacitor/camera`.
+3. **iOS.** `cap add ios` potřebuje macOS a účet Apple Developer.
+4. **Play Console.** Osobní účty registrované po listopadu 2023 musí před
+   produkcí projít **uzavřeným testem: 12 testerů, 14 dní**.
 
-Krátká odpověď: **ano, je to připravené — kromě notifikací.** Zbytek je
-konfigurace, push je skutečná práce.
+Krátká odpověď: **Android build je hotový, zbývá push, přílohy a Play účet.**
 
 ## Co záměrně ještě není
 

@@ -10,6 +10,8 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+# Capacitor web payload, rebuilt by `npm run sync:native`
+dist-native
 *.local
 
 # Editor directories and files
@@ -31,6 +33,13 @@ SCREENSHOTS OF THE OLD WEBSITE/
 # Env files — never commit secrets
 .env
 .env.local
+
+# Android signing keys. android/.gitignore already covers these, but keytool is
+# easy to run from the wrong directory and a signing key committed once is
+# compromised for good.
+*.jks
+*.keystore
+keystore.properties
 
 # Local Claude Code permissions (machine-specific)
 .claude/settings.local.json

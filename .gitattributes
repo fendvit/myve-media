@@ -1,0 +1,13 @@
+# core.autocrlf is on, which is fine for source but breaks executable scripts:
+# a shell script checked out with CRLF fails on macOS and Linux with a confusing
+# "bad interpreter" error. The Gradle wrapper matters here because an iOS build
+# or any CI run would use it.
+gradlew text eol=lf
+*.sh text eol=lf
+
+# Binary — never touch line endings or try to diff these.
+*.png binary
+*.jpg binary
+*.ico binary
+*.jks binary
+*.keystore binary

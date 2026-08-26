@@ -1,3 +1,4 @@
+import { Capacitor } from "@capacitor/core";
 import { db, supabase } from "./db";
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
@@ -5,6 +6,7 @@ const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undef
 export type PushState =
   | "unsupported" // browser can't do web push (or iOS Safari outside an installed app)
   | "needs-install" // iOS: only works once added to the home screen
+  | "native-pending" // Capacitor shell: needs FCM/APNs, not web push
   | "denied" // user blocked notifications at the browser level
   | "off"
   | "on";
@@ -38,6 +40,10 @@ export function pushSupported(): boolean {
 }
 
 export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
+  // Inside the Capacitor WebView a service worker caches nothing worth having
+  // and its push events never fire — native push goes via FCM/APNs instead.
+  // Registering anyway only produces errors on startup.
+  if (Capacitor.isNativePlatform()) return null;
   if (!("serviceWorker" in navigator)) return null;
   try {
     return await navigator.serviceWorker.register("/portal-sw.js", { scope: "/" });
@@ -47,6 +53,9 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
 }
 
 export async function getPushState(): Promise<PushState> {
+  // Say so plainly rather than falling through to "unsupported", which would
+  // blame the browser for something that simply isn't wired up yet.
+  if (Capacitor.isNativePlatform()) return "native-pending";
   if (!pushSupported()) {
     // iOS only exposes PushManager once the site is installed to the home
     // screen, so tell the user that rather than calling it unsupported.

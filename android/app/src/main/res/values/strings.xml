@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MYVE Portál</string>
+    <string name="title_activity_main">MYVE Portál</string>
+    <string name="package_name">media.myve.portal</string>
+    <string name="custom_url_scheme">media.myve.portal</string>
+</resources>

@@ -7,6 +7,13 @@
       "runtimeArgs": ["run", "dev"],
       "port": 8080,
       "autoPort": true
+    },
+    {
+      "name": "myve-native-preview",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["vite", "preview", "--mode", "native", "--port", "4173"],
+      "port": 4173,
+      "autoPort": true
     }
   ]
 }
