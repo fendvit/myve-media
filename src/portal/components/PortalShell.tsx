@@ -3,6 +3,10 @@ import { NavLink } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import UnreadBadge from "./UnreadBadge";
+// The wordmark cropped to its artwork. logo-myve.png is a 1024² canvas with the
+// mark filling 5% of it, so at header sizes it renders a few pixels tall — the
+// marketing nav compensates with h-32, which no app bar has room for.
+import logoMyve from "@/assets/logo-myve-wordmark.png";
 
 export interface NavItem {
   to: string;
@@ -39,6 +43,11 @@ function ClientLogo({ src, alt, className }: { src: string; alt: string; classNa
   return <img src={src} alt={alt} className={`w-auto max-w-full object-contain ${className}`} />;
 }
 
+/** Our own mark. Sized by height only — the crop is a fixed 5.05:1. */
+function MyveLogo({ className, alt = "MYVE" }: { className: string; alt?: string }) {
+  return <img src={logoMyve} alt={alt} className={`w-auto object-contain ${className}`} />;
+}
+
 /**
  * Desktop sidebar branding: the client's mark where our wordmark used to be,
  * with ours demoted to a credit line — the portal should read as their project,
@@ -57,8 +66,8 @@ function SidebarBrand({
     return (
       <div className="min-w-0">
         <ClientLogo src={logoUrl} alt={subtitle ?? title} className="max-h-8" />
-        <p className="text-xs text-muted-foreground mt-2">
-          od <span className="wordmark-myve">{title}</span>
+        <p className="flex items-center gap-1.5 text-xs text-muted-foreground mt-2">
+          od <MyveLogo className="h-3.5" />
         </p>
       </div>
     );
@@ -66,8 +75,8 @@ function SidebarBrand({
 
   return (
     <div className="min-w-0">
-      <p className="display-type wordmark-myve text-3xl">{title}</p>
-      {subtitle && <p className="truncate text-sm text-muted-foreground mt-1.5">{subtitle}</p>}
+      <MyveLogo className="h-7" alt={title} />
+      {subtitle && <p className="truncate text-sm text-muted-foreground mt-2">{subtitle}</p>}
     </div>
   );
 }
@@ -139,17 +148,21 @@ export default function PortalShell({
           className="lg:hidden shrink-0 border-b border-border bg-card/85 backdrop-blur-md"
           style={{ paddingTop: "env(safe-area-inset-top)" }}
         >
-          {/* Three slots, not a row of two: ours on the left, the client's
-              centred, the theme control on the right. The two outer slots are
-              locked to the same width so the logo is centred against the header
-              itself rather than against whatever is left over — otherwise it
-              drifts sideways as the wordmark and the button differ in size. */}
-          <div className="mx-auto w-full max-w-3xl px-4 h-16 flex items-center gap-2">
-            <div className="w-16 shrink-0">
-              <p className="display-type wordmark-myve text-xl leading-none">{title}</p>
-            </div>
+          {/* Three slots: ours left, the client's centred, the theme control
+              right.
 
-            <div className="flex-1 min-w-0 flex justify-center">
+              Equal outer tracks are what centre the middle against the header
+              itself rather than against the leftover space. They need an
+              explicit floor, though: as a bare `1fr` the track's automatic
+              minimum does not hold for a replaced element, and a wide enough
+              client logo collapsed our slot to zero — the wordmark disappeared
+              outright. `minmax(6rem, 1fr)` clears the 91px mark and cannot be
+              squeezed past it. The middle carries min-w-0 so an oversized
+              client logo gives way instead of pushing into either neighbour. */}
+          <div className="mx-auto w-full max-w-3xl px-4 h-16 grid grid-cols-[minmax(6rem,1fr)_auto_minmax(6rem,1fr)] items-center gap-3">
+            <MyveLogo className="h-[18px] shrink-0 justify-self-start" alt={title} />
+
+            <div className="min-w-0 justify-self-center">
               {logoUrl ? (
                 <ClientLogo src={logoUrl} alt={subtitle ?? title} className="max-h-8" />
               ) : (
@@ -159,7 +172,7 @@ export default function PortalShell({
               )}
             </div>
 
-            <div className="w-16 shrink-0 flex justify-end">
+            <div className="justify-self-end">
               <ThemeToggle />
             </div>
           </div>
