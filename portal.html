@@ -14,11 +14,33 @@
 
     <!-- Installable as an app (Add to Home Screen). -->
     <link rel="manifest" href="/portal-manifest.webmanifest" />
-    <meta name="theme-color" content="#0a0a0b" />
+    <meta name="theme-color" content="#f8f5f0" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="MYVE" />
+
+    <!--
+      Paints the saved theme before the first frame. Without this the page
+      renders light, then React swaps to dark a tick later — a white flash on
+      every launch, which is exactly what a dark-mode user opted out of.
+      Keys and default must match src/portal/lib/theme.tsx.
+    -->
+    <script>
+      (function () {
+        var theme = 'light';
+        try {
+          var stored = localStorage.getItem('myve-portal-theme');
+          if (stored === 'light' || stored === 'dark') theme = stored;
+        } catch (e) {}
+        document.documentElement.dataset.portalTheme = theme;
+        if (theme === 'dark') {
+          document
+            .querySelector('meta[name="theme-color"]')
+            .setAttribute('content', '#0a0a0b');
+        }
+      })();
+    </script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

@@ -57,6 +57,74 @@
 
     --font-display: 'Archivo', sans-serif;
     --font-body: 'DM Sans', sans-serif;
+
+    /* Scrollbar thumb — a token so the light portal can lighten it. */
+    --scrollbar-thumb: 240 4% 22%;
+  }
+
+  /* Daylight palette — PORTAL ONLY.
+     The marketing site is deliberately dark-only, so light mode is opted into
+     by an attribute that only portal.html ever sets. `:root[…]` rather than a
+     bare attribute selector so it outranks the `:root` block above regardless
+     of source order. */
+  :root[data-portal-theme='light'] {
+    color-scheme: light;
+
+    /* Warm paper, not clinical white — keeps the cream/coral brand warmth. */
+    --background: 36 33% 97%;
+    --foreground: 240 8% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 8% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 8% 12%;
+
+    /* Coral is unchanged — it is the brand. Its foreground stays near-black:
+       white on coral is only 3.3:1, dark ink on coral is 6:1, and it matches
+       how the dark theme already pairs them. */
+    --primary: 9 100% 61%;
+    --primary-foreground: 240 8% 10%;
+
+    --secondary: 36 25% 93%;
+    --secondary-foreground: 240 8% 22%;
+
+    --muted: 36 25% 94%;
+    --muted-foreground: 240 5% 42%;
+
+    --accent: 9 100% 61%;
+    --accent-foreground: 240 8% 10%;
+
+    --destructive: 0 72% 46%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 36 18% 88%;
+    --input: 36 18% 86%;
+    --ring: 9 100% 61%;
+
+    --sidebar-background: 36 30% 95%;
+    --sidebar-foreground: 240 8% 22%;
+    --sidebar-primary: 9 100% 61%;
+    --sidebar-primary-foreground: 240 8% 10%;
+    --sidebar-accent: 36 25% 91%;
+    --sidebar-accent-foreground: 240 8% 22%;
+    --sidebar-border: 36 18% 88%;
+    --sidebar-ring: 9 100% 61%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(9, 100%, 61%), hsl(21, 100%, 56%));
+    --gradient-hero: linear-gradient(180deg, hsl(36, 33%, 97%) 0%, hsl(36, 28%, 94%) 100%);
+    --gradient-warm: linear-gradient(135deg, hsl(9, 100%, 61%), hsl(21, 100%, 56%));
+
+    /* Light UI needs far less shadow than dark UI to read as elevated. */
+    --shadow-glow: 0 0 40px hsl(9 100% 61% / 0.2);
+    --shadow-card: 0 1px 2px hsl(240 10% 20% / 0.05), 0 8px 24px hsl(240 10% 20% / 0.06);
+    --shadow-card-hover: 0 2px 8px hsl(9 100% 55% / 0.12), 0 12px 32px hsl(240 10% 20% / 0.1);
+
+    --scrollbar-thumb: 36 12% 78%;
+  }
+
+  :root[data-portal-theme='dark'] {
+    color-scheme: dark;
   }
 }
 
@@ -94,7 +162,7 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(240 4% 22%);
+  background: hsl(var(--scrollbar-thumb));
   border-radius: 3px;
 }
 
@@ -123,6 +191,21 @@
   background-clip: text;
   color: transparent;
   letter-spacing: 0.005em;
+}
+
+/* The cream half of the wordmark disappears against a light page, so the light
+   portal swaps it for ink. The coral half — the part that carries the brand —
+   is untouched. */
+:root[data-portal-theme='light'] .display-type.wordmark-myve {
+  background: linear-gradient(
+    100deg,
+    hsl(240 8% 12%) 0%,
+    hsl(240 8% 12%) 32%,
+    hsl(21 100% 56%) 60%,
+    hsl(9 100% 58%) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
 }
 
 /* Display type — bold condensed-feeling Archivo, tight tracking */
@@ -215,4 +298,125 @@
 
 @keyframes gradrim-spin {
   to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* ---------------------------------------------------------------------------
+   Portal
+   Only applies under portal.html, which is the only entry that sets
+   data-portal-theme on <html>.
+   --------------------------------------------------------------------------- */
+
+/* Chrome-like feel for the installed app: no rubber-band scroll past the shell,
+   no long-press callout, no double-tap zoom on the tab bar. */
+:root[data-portal-theme] body {
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Formatted update bodies. Tailwind's typography plugin assumes a light page
+   and hard-codes greys, so the portal styles the handful of tags Tiptap can
+   emit against the theme tokens instead — one rule set, both themes. */
+.portal-rich {
+  font-size: 0.875rem;
+  line-height: 1.65;
+  color: hsl(var(--muted-foreground));
+  overflow-wrap: anywhere;
+}
+
+.portal-rich > :first-child { margin-top: 0; }
+.portal-rich > :last-child { margin-bottom: 0; }
+
+.portal-rich p { margin: 0.5em 0; }
+
+.portal-rich h1,
+.portal-rich h2,
+.portal-rich h3,
+.portal-rich h4 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: hsl(var(--foreground));
+  margin: 1.1em 0 0.4em;
+  line-height: 1.25;
+}
+
+.portal-rich h1 { font-size: 1.15rem; }
+.portal-rich h2 { font-size: 1.05rem; }
+.portal-rich h3,
+.portal-rich h4 { font-size: 0.95rem; }
+
+.portal-rich strong { color: hsl(var(--foreground)); font-weight: 600; }
+.portal-rich em { font-style: italic; }
+.portal-rich s { opacity: 0.6; }
+
+.portal-rich ul,
+.portal-rich ol {
+  margin: 0.5em 0;
+  padding-left: 1.25em;
+}
+
+.portal-rich ul { list-style: disc; }
+.portal-rich ol { list-style: decimal; }
+.portal-rich li { margin: 0.2em 0; }
+.portal-rich li::marker { color: hsl(var(--primary)); }
+
+.portal-rich a {
+  color: hsl(var(--primary));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.portal-rich blockquote {
+  margin: 0.75em 0;
+  padding-left: 0.9em;
+  border-left: 2px solid hsl(var(--primary) / 0.4);
+  font-style: italic;
+}
+
+.portal-rich code {
+  font-size: 0.85em;
+  background: hsl(var(--secondary));
+  color: hsl(var(--foreground));
+  padding: 0.15em 0.4em;
+  border-radius: 0.35em;
+}
+
+.portal-rich pre {
+  margin: 0.75em 0;
+  padding: 0.75em 0.9em;
+  background: hsl(var(--secondary));
+  border-radius: 0.75rem;
+  overflow-x: auto;
+}
+
+.portal-rich pre code {
+  background: none;
+  padding: 0;
+}
+
+.portal-rich hr {
+  margin: 1em 0;
+  border: 0;
+  border-top: 1px solid hsl(var(--border));
+}
+
+/* Tiptap's empty-document placeholder. */
+.portal-rich p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: hsl(var(--muted-foreground));
+}
+
+@keyframes portal-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.portal-rise {
+  animation: portal-rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portal-rise { animation: none; }
 }

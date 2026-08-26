@@ -6,3 +6,10 @@ project_id = "nkfefurnjhupzealopym"
 # function must be reachable without a JWT. It does its own rate limiting.
 [functions.redeem-code]
 verify_jwt = false
+
+# The MCP server is called by a desktop AI assistant, which has no Supabase
+# session to present. It authenticates with its own shared bearer token
+# (PORTAL_MCP_TOKEN) instead, so Supabase's JWT gate has to be off or the
+# request is rejected before the function ever runs.
+[functions.portal-mcp]
+verify_jwt = false

@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Loader2, Plus, Send } from "lucide-react";
+import { ArrowLeft, Check, Copy, Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Chat from "../components/Chat";
+import UpdateBody from "../components/UpdateBody";
+import UpdateComposer from "../components/UpdateComposer";
 import { db } from "../lib/db";
 import { relativeFromNow } from "../lib/format";
+import { STATUS_PRESETS, statusTone } from "../lib/status";
 import type { PortalClient, PortalProject, PortalUpdate } from "../lib/types";
-
-const STATUS_PRESETS = ["V přípravě", "Probíhá", "Ke kontrole", "Hotovo", "Pozastaveno"];
 
 function ProjectCard({
   project,
@@ -23,8 +24,6 @@ function ProjectCard({
   const [saving, setSaving] = useState(false);
 
   const [updates, setUpdates] = useState<PortalUpdate[]>([]);
-  const [updateBody, setUpdateBody] = useState("");
-  const [posting, setPosting] = useState(false);
 
   async function loadUpdates() {
     const { data } = await db
@@ -56,21 +55,26 @@ function ProjectCard({
     onChanged();
   }
 
-  async function postUpdate(event: React.FormEvent) {
-    event.preventDefault();
-    if (!updateBody.trim()) return;
-    setPosting(true);
+  async function postUpdate({ title, body }: { title: string | null; body: string }) {
     await db
       .from("portal_updates")
-      .insert({ project_id: project.id, body: updateBody.trim() });
-    setUpdateBody("");
-    setPosting(false);
+      .insert({ project_id: project.id, title, body, is_html: true });
     await loadUpdates();
   }
 
   return (
-    <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
-      <p className="font-display font-semibold">{project.name}</p>
+    <div
+      className="bg-card border border-border rounded-2xl p-5 space-y-4"
+      style={{ boxShadow: "var(--shadow-card)" }}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <p className="font-display font-semibold text-lg">{project.name}</p>
+        <span
+          className={`shrink-0 text-[11px] font-medium px-2.5 py-1 rounded-full border ${statusTone(status)}`}
+        >
+          {status}
+        </span>
+      </div>
 
       <div className="flex flex-wrap gap-1.5">
         {STATUS_PRESETS.map((preset) => (
@@ -93,7 +97,7 @@ function ProjectCard({
       <div>
         <div className="flex justify-between text-xs text-muted-foreground mb-2">
           <span>Průběh</span>
-          <span className="tabular-nums text-foreground font-medium">{progress} %</span>
+          <span className="tabular-nums text-foreground font-semibold">{progress} %</span>
         </div>
         <input
           type="range"
@@ -125,41 +129,20 @@ function ProjectCard({
         </Button>
       )}
 
-      <div className="border-t border-border pt-4">
-        <form onSubmit={postUpdate} className="flex items-end gap-2">
-          <textarea
-            value={updateBody}
-            onChange={(event) => setUpdateBody(event.target.value)}
-            rows={2}
-            placeholder="Nový záznam do logu…"
-            className="flex-1 resize-none bg-secondary rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-          />
-          <Button
-            type="submit"
-            size="icon"
-            disabled={posting || !updateBody.trim()}
-            className="rounded-xl shrink-0 h-10 w-10"
-            style={{ background: "var(--gradient-primary)" }}
-            aria-label="Přidat záznam"
-          >
-            {posting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-          </Button>
-        </form>
+      <div className="border-t border-border pt-4 space-y-4">
+        <UpdateComposer onSubmit={postUpdate} />
 
         {updates.length > 0 && (
-          <ul className="mt-4 space-y-3">
+          <ul className="space-y-3 border-t border-border pt-4">
             {updates.map((update) => (
-              <li key={update.id} className="text-sm">
+              <li key={update.id}>
                 <p className="text-[11px] text-muted-foreground">
                   {relativeFromNow(update.created_at)}
                 </p>
-                <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                  {update.body}
-                </p>
+                {update.title && (
+                  <p className="font-display font-semibold text-sm mt-0.5">{update.title}</p>
+                )}
+                <UpdateBody body={update.body} isHtml={update.is_html} className="mt-1" />
               </li>
             ))}
           </ul>
@@ -175,6 +158,7 @@ export default function AdminClient() {
   const [projects, setProjects] = useState<PortalProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"projects" | "chat">("projects");
+  const [copied, setCopied] = useState(false);
 
   const [newProject, setNewProject] = useState("");
   const [creating, setCreating] = useState(false);
@@ -210,6 +194,13 @@ export default function AdminClient() {
     await load();
   }
 
+  async function copyCode() {
+    if (!client) return;
+    await navigator.clipboard.writeText(client.access_code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1800);
+  }
+
   if (loading) {
     return (
       <div className="flex justify-center py-16 text-muted-foreground">
@@ -224,7 +215,7 @@ export default function AdminClient() {
 
   return (
     <div className="h-full flex flex-col min-h-0">
-      <div className="px-4 pt-4 shrink-0">
+      <div className="px-4 pt-4 lg:px-10 lg:pt-8 shrink-0 mx-auto w-full max-w-3xl lg:max-w-5xl">
         <Link
           to="/admin"
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-3"
@@ -232,12 +223,26 @@ export default function AdminClient() {
           <ArrowLeft className="h-4 w-4" /> Klienti
         </Link>
 
-        <h2 className="font-display text-xl font-bold">{client.name}</h2>
-        <p className="text-xs text-muted-foreground mb-4">
-          Kód <span className="tracking-widest">{client.access_code}</span>
-        </p>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <h2 className="font-display text-2xl lg:text-3xl font-bold tracking-tight">
+            {client.name}
+          </h2>
+          <button
+            type="button"
+            onClick={copyCode}
+            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary px-3 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Zkopírovat přístupový kód"
+          >
+            <span className="tracking-widest font-display">{client.access_code}</span>
+            {copied ? (
+              <Check className="h-3.5 w-3.5 text-primary" />
+            ) : (
+              <Copy className="h-3.5 w-3.5" />
+            )}
+          </button>
+        </div>
 
-        <div className="flex gap-1 bg-secondary rounded-xl p-1 mb-4">
+        <div className="flex gap-1 bg-secondary rounded-xl p-1 my-4 lg:max-w-xs">
           {(
             [
               ["projects", "Projekty"],
@@ -251,7 +256,7 @@ export default function AdminClient() {
               className={[
                 "flex-1 py-2 rounded-lg text-sm font-medium transition-colors",
                 tab === key
-                  ? "bg-background text-foreground"
+                  ? "bg-card text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground",
               ].join(" ")}
             >
@@ -262,39 +267,41 @@ export default function AdminClient() {
       </div>
 
       {tab === "projects" ? (
-        <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-6 space-y-4">
-          <form onSubmit={addProject} className="flex gap-2">
-            <Input
-              value={newProject}
-              onChange={(event) => setNewProject(event.target.value)}
-              placeholder="Název nového projektu"
-              className="rounded-xl"
-            />
-            <Button
-              type="submit"
-              size="icon"
-              disabled={creating || !newProject.trim()}
-              className="rounded-xl shrink-0 h-10 w-10"
-              style={{ background: "var(--gradient-primary)" }}
-              aria-label="Přidat projekt"
-            >
-              {creating ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Plus className="h-4 w-4" />
-              )}
-            </Button>
-          </form>
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <div className="mx-auto w-full max-w-3xl lg:max-w-5xl px-4 pb-6 lg:px-10 lg:pb-10 space-y-4">
+            <form onSubmit={addProject} className="flex gap-2">
+              <Input
+                value={newProject}
+                onChange={(event) => setNewProject(event.target.value)}
+                placeholder="Název nového projektu"
+                className="rounded-xl"
+              />
+              <Button
+                type="submit"
+                size="icon"
+                disabled={creating || !newProject.trim()}
+                className="rounded-xl shrink-0 h-10 w-10"
+                style={{ background: "var(--gradient-primary)" }}
+                aria-label="Přidat projekt"
+              >
+                {creating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Plus className="h-4 w-4" />
+                )}
+              </Button>
+            </form>
 
-          {projects.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-10">
-              Tento klient zatím nemá projekt.
-            </p>
-          ) : (
-            projects.map((project) => (
-              <ProjectCard key={project.id} project={project} onChanged={load} />
-            ))
-          )}
+            {projects.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-10">
+                Tento klient zatím nemá projekt.
+              </p>
+            ) : (
+              projects.map((project) => (
+                <ProjectCard key={project.id} project={project} onChanged={load} />
+              ))
+            )}
+          </div>
         </div>
       ) : (
         <div className="flex-1 min-h-0">

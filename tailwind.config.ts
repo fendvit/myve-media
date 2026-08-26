@@ -1,7 +1,15 @@
 import type { Config } from "tailwindcss";
 
 export default {
-  darkMode: ["class"],
+  // Scoped to the portal on purpose. The marketing site has no light mode — its
+  // `:root` *is* the dark theme — so a plain `class`/`media` strategy would
+  // either never fire or would flip shadcn's `dark:` fallbacks on a site that
+  // was never designed against them. Keying off the attribute only portal.html
+  // sets means `dark:` is a portal tool and nothing else changes.
+  darkMode: [
+    "variant",
+    "&:where(:root[data-portal-theme='dark'], :root[data-portal-theme='dark'] *)",
+  ],
   content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
   prefix: "",
   theme: {

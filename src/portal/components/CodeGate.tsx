@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ArrowRight, KeyRound, Loader2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import ThemeToggle from "./ThemeToggle";
 import { redeemAccessCode, supabase } from "../lib/db";
 import { usePortalSession } from "../lib/session";
 
@@ -52,13 +53,20 @@ export default function CodeGate() {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-background flex flex-col items-center justify-center p-6">
-      <div className="w-full max-w-sm">
+    <div className="relative min-h-[100dvh] bg-background flex flex-col items-center justify-center p-6">
+      {/* Reachable before sign-in on purpose — a dark-mode client should not
+          have to sit through a full-brightness login screen first. */}
+      <div
+        className="absolute top-4 right-4"
+        style={{ marginTop: "env(safe-area-inset-top)" }}
+      >
+        <ThemeToggle />
+      </div>
+
+      <div className="w-full max-w-sm portal-rise">
         <div className="text-center mb-8">
-          <h1 className="font-display text-4xl font-bold tracking-tight">
-            <span className="text-gradient">MYVE</span>
-          </h1>
-          <p className="text-muted-foreground text-sm mt-2">
+          <h1 className="display-type wordmark-myve text-5xl">MYVE</h1>
+          <p className="text-muted-foreground text-sm mt-3">
             {mode === "code" ? "Klientský portál" : "Přihlášení správce"}
           </p>
         </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Mail, MapPin, Phone, Smartphone } from "lucide-react";
 import NotificationToggle from "../components/NotificationToggle";
+import ThemeToggle from "../components/ThemeToggle";
 import { db } from "../lib/db";
 import { usePortalSession } from "../lib/session";
 import type { PortalClient } from "../lib/types";
@@ -45,7 +46,7 @@ export default function ClientContact() {
   }, []);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 lg:grid lg:grid-cols-2 lg:gap-5 lg:space-y-0 lg:items-start portal-rise">
       <section
         className="bg-card border border-border rounded-3xl p-6"
         style={{ boxShadow: "var(--shadow-card)" }}
@@ -95,6 +96,14 @@ export default function ClientContact() {
 
       <section className="bg-card border border-border rounded-3xl p-6">
         <NotificationToggle />
+      </section>
+
+      <section className="bg-card border border-border rounded-3xl p-6">
+        <h3 className="font-display font-semibold mb-1">Vzhled</h3>
+        <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+          Portál si pamatuje volbu pro tohle zařízení.
+        </p>
+        <ThemeToggle variant="switch" className="-mx-3" />
       </section>
 
       <section className="bg-card border border-border rounded-3xl p-6">

@@ -14,8 +14,11 @@ komponenty i Supabase klienta — je to druhý Vite entry, ne druhá aplikace.
 | `src/portal/` | Veškerý kód portálu |
 | `src/portal/lib/types.ts` | Ručně psané typy portálových tabulek |
 | `src/portal/lib/db.ts` | Typovaný klient, redeem kódu, přílohy |
+| `src/portal/lib/theme.tsx` | Přepínač světlý/tmavý režim |
+| `src/portal/lib/richText.ts` | Sanitizace HTML v záznamech logu |
 | `supabase/migrations/20260826120000_portal_schema.sql` | Tabulky, RLS, storage |
 | `supabase/functions/redeem-code/` | Výměna kódu za session |
+| `supabase/functions/portal-mcp/` | MCP server pro Clauda |
 
 Marketingový web se nezměnil — jen `vite.config.ts` (druhý entry) a
 `vercel.json` (rewrite podle hostname).
@@ -48,6 +51,8 @@ Migrace jsou nasazené v projektu **Myve Media** (`nkfefurnjhupzealopym`):
 | --- | --- |
 | `20260826111227` | `portal_schema` — tabulky, RLS, storage, realtime |
 | `20260826111433` | `portal_restrict_function_execution` — odebrání RPC přístupu roli `anon` |
+| `20260826114803` | `portal_push_subscriptions` — odběry push notifikací |
+| `20260826124808` | `portal_updates_rich_text` — sloupec `is_html` pro formátovaný log |
 
 `config.toml` byl přepsaný na správný ref (byl tam `gewjbombgrhqlebkwcjq`,
 což je jiný projekt). Lokální soubory v `supabase/migrations/` mají stejné
@@ -56,19 +61,18 @@ verze jako vzdálená historie, takže `supabase db push` je nebude aplikovat zn
 Bootstrap adminů proběhl a vytvořil **jeden** profil — v projektu byl jediný
 auth uživatel (vy). Není co promazávat.
 
-### 2. Edge funkce — ⚠️ zbývá udělat
+### 2. Edge funkce
 
-```bash
-supabase functions deploy redeem-code
-```
+| Funkce | Stav |
+| --- | --- |
+| `redeem-code` | ✅ nasazená (`verify_jwt = false`) |
+| `send-push` | ✅ nasazená |
+| `portal-mcp` | ⚠️ zbývá — viz [MCP](#mcp--ovládání-portálu-claudem) |
 
-`verify_jwt = false` je už v `config.toml` — funkci volají lidé, kteří ještě
+`verify_jwt = false` u `redeem-code` je záměr — funkci volají lidé, kteří ještě
 žádnou session nemají, a autentizaci si řeší sama (kód + rate limit). Env
 proměnné (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`)
 doplňuje Supabase sám.
-
-Dokud tohle neproběhne, kód na přihlašovací obrazovce nebude fungovat —
-všechno ostatní (schéma, RLS, build) je připravené.
 
 ### 3. Doména
 
@@ -118,6 +122,87 @@ Lokálně: `npm run dev` → <http://localhost:8080/portal.html>
 
 Ostrý provoz: přihlaste se jako správce → „Nový klient" → zkopírujte kód →
 otevřete v anonymním okně a kód zadejte.
+
+## Vzhled
+
+Portál má **světlý režim jako výchozí** — klienti ho čtou přes den a na
+telefonu. Tmavý je na jedno kliknutí (ikona slunce/měsíce v hlavičce, na
+desktopu přepínač v levém panelu, klient také v **Kontakt → Vzhled**). Volba se
+ukládá do `localStorage` pro dané zařízení.
+
+**Marketingový web zůstává tmavý a nic z toho se ho netýká.** Světlá paleta je
+schovaná pod `:root[data-portal-theme='light']` a ten atribut nastavuje jedině
+`portal.html` — inline skriptem *před* prvním vykreslením, aby při startu
+neproblikla bílá. Ze stejného důvodu je i Tailwind varianta `dark:`
+nakonfigurovaná na tenhle atribut, ne na `.dark`.
+
+Značka se nemění: korálová zůstává korálová, text na ní je v obou režimech
+tmavý (bílá na korálové má kontrast jen 3,3 : 1).
+
+### Mobil vs. počítač
+
+Jedny routy, dvě šasi. Do šířky `lg` je to appka — horní lišta a spodní
+záložky pod palcem. Od `lg` výš je to desktopová aplikace — trvalý levý panel,
+žádné spodní záložky, širší obsah. Řeší to `PortalShell`, stránky o tom nevědí.
+
+## Odznaky nepřečtených
+
+Jako na telefonu: korálová bublinka s počtem na ikoně.
+
+- **Klient** ji vidí na **Chat** (nové zprávy od vás) a na **Projekt** (nové
+  záznamy v logu).
+- **Vy** ji vidíte na **Klienti** (součet) a u konkrétního klienta v seznamu,
+  který navíc zvýrazní rámeček a ztuční jméno.
+
+Zprávy, které jste poslal sám, se nikdy nepočítají jako nepřečtené.
+
+Stav čtení drží `portal_read_state` — dvě značky (`messages_seen_at`,
+`updates_seen_at`) na dvojici uživatel + klient. Ne příznak u každé zprávy:
+odpovědět na otázku „je něco nového?" jedním `upsert` je levnější než přepsat N
+řádků, a stejný mechanismus pokrývá i log, který žádný sloupec o přečtení nemá.
+Značka je v databázi, takže odznaky sedí i když se přihlásíte na jiném zařízení.
+
+Počty vrací jediné volání `portal_unread_summary()`. Seznam klientů by jinak
+potřeboval dotaz na klienta a PostgREST neumí grupovat na klientovi.
+
+Odznak naskočí **živě** — `portal_messages` i `portal_updates` už jsou
+v publikaci `supabase_realtime`. Co dorazí na obrazovku, na kterou se zrovra
+díváte, se rovnou označí jako přečtené, takže vám nenaskočí bublinka na kartě,
+kterou máte otevřenou.
+
+## Formátovaný log
+
+Záznamy v logu se píšou v editoru s formátováním (tučně, kurzíva, mezinadpis,
+odrážky, odkazy) a ukládají se jako HTML. Sloupec `is_html` říká, čím záznam
+je — staré záznamy mají `false` a renderují se dál jako čistý text. Hádat to
+podle obsahu by rozbilo každý záznam, který legitimně obsahuje `<`.
+
+HTML se sanitizuje **dvakrát**: při uložení a znovu při vykreslení
+(`sanitizeRichText`, allowlist). Do logu píše jen admin, takže to není poslední
+obranná linie — je to pojistka proti tomu, aby se z portálu stalo uložené XSS.
+
+### Markdown
+
+Editor rozumí Markdownu, takže se nemusíte trefovat do tlačítek:
+
+| Napíšete | Dostanete |
+| --- | --- |
+| `# `, `## `, `### ` | nadpis (tři úrovně) |
+| `- ` / `1. ` | odrážky / číslovaný seznam |
+| `**tučně**`, `*kurzíva*` | tučně, kurzíva |
+| `> ` | citace |
+
+**Kopírování formátování funguje oběma směry.** Vložíte-li text s nadpisy
+(z dokumentu, z jiného záznamu), nadpisy zůstanou — proto editor povoluje tři
+úrovně nadpisů, ne jednu. Vložíte-li **čistý text**, který vypadá jako Markdown,
+převede se na skutečné formátování; jinak by se `##` a `-` vysypaly na zem jako
+obyčejné znaky.
+
+Převodník `markdownToHtml` je **jeden** a sdílí ho editor i MCP server, takže
+Markdown znamená totéž, ať píše člověk nebo Claude. Vstup se nejdřív
+naescapuje a HTML se pak skládá jen z povolených značek — proto tam není žádný
+sanitizer a ani být nemusí. Test hlídá, že výstup projde `sanitizeRichText`
+beze změny; kdyby se rozešly, MCP by uměl vyrobit značky, které portál zahodí.
 
 ## Denní používání
 
@@ -193,6 +278,76 @@ Portál to pozná a na iOS místo přepínače rovnou ukáže návod na instalac
 `portal-sw.js` schválně **nic necachuje**. Klientský portál, který ukazuje
 zastaralý stav projektu nebo starý chat, je horší než ten, co chce připojení.
 
+## MCP — ovládání portálu Claudem
+
+`supabase/functions/portal-mcp/` je MCP server. Po připojení umí Claude zakládat
+klienty, přidávat projekty, měnit stav a průběh, psát formátované záznamy do
+logu, číst chat a sbírat podklady na reporty.
+
+| Nástroj | Co dělá |
+| --- | --- |
+| `list_clients` | Seznam klientů s projekty a kódy |
+| `get_client` | Detail klienta včetně posledních záznamů |
+| `create_client` | Nový klient (kód vygeneruje databáze) |
+| `create_project` / `update_project` | Projekty, stav, průběh, odkaz |
+| `post_update` | Záznam do logu — píše se v Markdownu |
+| `list_updates` / `read_chat` | Čtení logu a konverzace |
+| `send_message` | Zpráva klientovi do chatu |
+| `project_report` | Podklady pro report za období |
+
+Klienta i projekt lze pojmenovat ID, kódem nebo jménem. Když jméno sedí na víc
+záznamů, nástroj **skončí chybou a vypíše kandidáty** — netipuje, protože špatný
+tip zapisuje do portálu cizího klienta.
+
+### ⚠️ Než to nasadíte
+
+`PORTAL_MCP_TOKEN` je jediný sdílený token a stojí zastupuje service role:
+**kdo ho má, má plný přístup ke všem datům všech klientů.** Nedávejte ho nikam,
+kam byste nedali service role key. Rotace = změnit secret a znovu nasadit.
+
+### Nastavení
+
+Vygenerujte token (klidně čímkoli, co dá dost náhody):
+
+```powershell
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+```
+
+Uložte ho do Supabase a nasaďte funkci:
+
+```powershell
+supabase secrets set "PORTAL_MCP_TOKEN=sem-ten-token" --project-ref nkfefurnjhupzealopym
+supabase functions deploy portal-mcp --project-ref nkfefurnjhupzealopym
+```
+
+`verify_jwt = false` je už v `config.toml` — volá to desktopový asistent, který
+žádnou Supabase session nemá, a autentizaci si funkce řeší sama tím tokenem.
+
+### Připojení v Claude Code
+
+```powershell
+claude mcp add --transport http myve-portal `
+  https://nkfefurnjhupzealopym.supabase.co/functions/v1/portal-mcp `
+  --header "Authorization: Bearer sem-ten-token"
+```
+
+Ověření, že server odpovídá:
+
+```powershell
+curl -X POST https://nkfefurnjhupzealopym.supabase.co/functions/v1/portal-mcp `
+  -H "Authorization: Bearer sem-ten-token" -H "Content-Type: application/json" `
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+```
+
+### Co MCP nedělá
+
+- **Zprávy z `send_message` neposílají push.** Push funkce ověřuje JWT
+  přihlášeného uživatele a MCP žádné nemá. Zpráva dorazí, notifikace ne.
+- **Reporty nepíše server.** `project_report` vrátí data — text napíše Claude a
+  teprve `post_update` ho zveřejní. Jinak by reporty psal kus kódu v edge funkci.
+- **Není tam OAuth**, takže vlastní konektor na claude.ai (který OAuth chce)
+  tímhle nepřipojíte. Claude Code s hlavičkou ano.
+
 ## Bezpečnost — co zbývá v linteru
 
 Supabase security linter po nasazení hlásí ještě tohle a **je to v pořádku**:
@@ -209,10 +364,47 @@ Jedna věc k zapnutí ručně v dashboardu (Authentication → Policies):
 **Leaked password protection**. Týká se to vašeho admin hesla, kontroluje ho
 proti HaveIBeenPwned.
 
+## Nativní appka — kde na to portál je
+
+Portál je teď instalovatelná PWA. Do App Store / Google Play ho dostane
+**Capacitor**, ne Expo: Capacitor zabalí přesně tenhle kód, Expo by znamenalo
+přepsat celý design systém (Tailwind, shadcn, Radix) do React Native. Nic
+z toho, co je níž, ten závěr nemění — jen upřesňuje, kolik práce zbývá.
+
+### Co funguje beze změny
+
+| | Proč |
+| --- | --- |
+| Přihlášení a session | `localStorage` + `persistSession`; WebView ho drží stejně jako prohlížeč |
+| Realtime (chat, odznaky) | WebSocket ve WebView funguje |
+| Celý vzhled | je to web CSS — přesně důvod, proč Capacitor |
+| Bezpečné zóny (výřez, home indicator) | `env(safe-area-inset-*)` a `viewport-fit=cover` už v kódu jsou |
+| Mobilní rozvržení | spodní záložky a horní lišta jsou appka už teď |
+
+### Co je potřeba dodělat
+
+1. **Push notifikace — hlavní kus práce.** Web Push (service worker + VAPID)
+   v Capacitoru na iOS **nefunguje vůbec** a na Androidu je nespolehlivý.
+   Nativně se musí přes `@capacitor/push-notifications` → FCM (Android) + APNs
+   (iOS). To znamená: jiný typ tokenu v `portal_push_subscriptions`, větev
+   v `send-push` (web-push vs. FCM/APNs), účet Apple Developer (2 500 Kč/rok)
+   a projekt ve Firebase.
+2. **Build jen pro portál.** Vite teď staví dva vstupy (`index.html` marketing
+   + `portal.html`). Nativní build musí obsahovat **jen** portál a mít ho
+   v kořeni — jinak se v appce otevře marketingový web. (Přesně to se stane
+   i lokálně, když v dev serveru načtete `/` místo `/portal.html`.)
+3. **Service worker vypnout na nativu.** `portal-sw.js` se registruje při startu;
+   v Capacitoru je zbytečný a jen zdroj chyb — obalit `Capacitor.isNativePlatform()`.
+4. **Přílohy.** `target="_blank"` na podepsané odkazy chce `@capacitor/browser`,
+   jinak se soubor otevře uvnitř appky nebo vůbec. Focení přílohy chce
+   `@capacitor/camera`.
+
+Krátká odpověď: **ano, je to připravené — kromě notifikací.** Zbytek je
+konfigurace, push je skutečná práce.
+
 ## Co záměrně ještě není
 
-- **Nativní appka.** Portál je teď instalovatelná PWA („Přidat na plochu").
-  Na App Store / Google Play to dostane **Capacitor**, který zabalí přesně
-  tenhle kód — proto ne Expo, který by znamenal přepsat celý design systém
-  do React Native.
 - **Faktury z Fakturoidu**, archivace klientů, více adminů.
+- **Odznaky u jednotlivých projektů.** Značka je na klienta, ne na projekt, takže
+  otevření jednoho projektu smaže odznak i pro ostatní. U klienta s jedním
+  projektem (běžný případ) se to nepozná; jinak by to chtělo druhou tabulku.

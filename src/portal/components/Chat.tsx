@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { db, signAttachment, supabase, uploadAttachment } from "../lib/db";
 import { notifyNewMessage } from "../lib/push";
 import { formatDayLabel, formatTime } from "../lib/format";
+import { usePortalUnread } from "../lib/unread";
 import type { PortalMessage, SenderRole } from "../lib/types";
 
 interface ChatProps {
@@ -68,6 +69,8 @@ export default function Chat({ clientId, as, heading }: ChatProps) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const { markMessagesSeen } = usePortalUnread();
+
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -89,6 +92,8 @@ export default function Chat({ clientId, as, heading }: ChatProps) {
         else setMessages((data as PortalMessage[]) ?? []);
         setLoading(false);
         requestAnimationFrame(() => scrollToBottom("auto"));
+        // The thread is on screen, so it counts as read.
+        void markMessagesSeen(clientId);
       });
 
     const channel = supabase
@@ -110,6 +115,9 @@ export default function Chat({ clientId, as, heading }: ChatProps) {
               : [...current, incoming],
           );
           requestAnimationFrame(() => scrollToBottom());
+          // Arriving while the thread is open means it was read on arrival —
+          // otherwise the badge would appear on the screen you are looking at.
+          if (incoming.sender_role !== as) void markMessagesSeen(clientId);
         },
       )
       .subscribe();
@@ -118,7 +126,7 @@ export default function Chat({ clientId, as, heading }: ChatProps) {
       active = false;
       supabase.removeChannel(channel);
     };
-  }, [clientId, scrollToBottom]);
+  }, [clientId, scrollToBottom, as, markMessagesSeen]);
 
   async function handleSend(event: React.FormEvent) {
     event.preventDefault();
@@ -183,7 +191,9 @@ export default function Chat({ clientId, as, heading }: ChatProps) {
         </div>
       )}
 
-      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-1">
+      {/* The thread keeps a readable column on a wide monitor instead of
+          throwing bubbles at the far edges of the screen. */}
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-1 w-full max-w-3xl mx-auto">
         {loading ? (
           <div className="h-full flex items-center justify-center text-muted-foreground">
             <Loader2 className="h-5 w-5 animate-spin" />
@@ -254,75 +264,78 @@ export default function Chat({ clientId, as, heading }: ChatProps) {
 
       <form
         onSubmit={handleSend}
-        className="shrink-0 border-t border-border bg-card px-3 py-3 space-y-2"
+        className="shrink-0 border-t border-border bg-card px-3 py-3 w-full"
+        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
       >
-        {error && <p className="text-xs text-destructive px-1">{error}</p>}
+        <div className="w-full max-w-3xl mx-auto space-y-2">
+          {error && <p className="text-xs text-destructive px-1">{error}</p>}
 
-        {pendingFile && (
-          <div className="flex items-center gap-2 text-xs bg-secondary rounded-lg px-3 py-2">
-            <Paperclip className="h-3 w-3 shrink-0" />
-            <span className="truncate flex-1">{pendingFile.name}</span>
-            <button
+          {pendingFile && (
+            <div className="flex items-center gap-2 text-xs bg-secondary rounded-lg px-3 py-2">
+              <Paperclip className="h-3 w-3 shrink-0" />
+              <span className="truncate flex-1">{pendingFile.name}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setPendingFile(null);
+                  if (fileInputRef.current) fileInputRef.current.value = "";
+                }}
+                className="text-muted-foreground hover:text-foreground"
+                aria-label="Odebrat přílohu"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
+
+          <div className="flex items-end gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              onChange={(event) => setPendingFile(event.target.files?.[0] ?? null)}
+            />
+            <Button
               type="button"
-              onClick={() => {
-                setPendingFile(null);
-                if (fileInputRef.current) fileInputRef.current.value = "";
-              }}
-              className="text-muted-foreground hover:text-foreground"
-              aria-label="Odebrat přílohu"
+              variant="ghost"
+              size="icon"
+              onClick={() => fileInputRef.current?.click()}
+              className="rounded-xl shrink-0 h-11 w-11"
+              aria-label="Přiložit soubor"
             >
-              <X className="h-3.5 w-3.5" />
-            </button>
+              <Paperclip className="h-5 w-5" />
+            </Button>
+
+            <textarea
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              onKeyDown={(event) => {
+                // Enter sends, Shift+Enter makes a new line — chat convention.
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  handleSend(event);
+                }
+              }}
+              rows={1}
+              placeholder="Napište zprávu…"
+              className="flex-1 resize-none bg-secondary rounded-xl px-4 py-3 text-[15px] outline-none focus:ring-2 focus:ring-ring max-h-32 min-h-[44px]"
+            />
+
+            <Button
+              type="submit"
+              size="icon"
+              disabled={sending || (!draft.trim() && !pendingFile)}
+              className="rounded-xl shrink-0 h-11 w-11"
+              style={{ background: "var(--gradient-primary)" }}
+              aria-label="Odeslat"
+            >
+              {sending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </Button>
           </div>
-        )}
-
-        <div className="flex items-end gap-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            className="hidden"
-            onChange={(event) => setPendingFile(event.target.files?.[0] ?? null)}
-          />
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={() => fileInputRef.current?.click()}
-            className="rounded-xl shrink-0 h-11 w-11"
-            aria-label="Přiložit soubor"
-          >
-            <Paperclip className="h-5 w-5" />
-          </Button>
-
-          <textarea
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            onKeyDown={(event) => {
-              // Enter sends, Shift+Enter makes a new line — chat convention.
-              if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault();
-                handleSend(event);
-              }
-            }}
-            rows={1}
-            placeholder="Napište zprávu…"
-            className="flex-1 resize-none bg-secondary rounded-xl px-4 py-3 text-[15px] outline-none focus:ring-2 focus:ring-ring max-h-32 min-h-[44px]"
-          />
-
-          <Button
-            type="submit"
-            size="icon"
-            disabled={sending || (!draft.trim() && !pendingFile)}
-            className="rounded-xl shrink-0 h-11 w-11"
-            style={{ background: "var(--gradient-primary)" }}
-            aria-label="Odeslat"
-          >
-            {sending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-          </Button>
         </div>
       </form>
     </div>

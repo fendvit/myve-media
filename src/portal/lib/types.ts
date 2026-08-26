@@ -42,6 +42,8 @@ export type PortalUpdate = {
   project_id: string;
   title: string | null;
   body: string;
+  /** True when `body` is sanitized HTML; false means plain text. */
+  is_html: boolean;
   created_at: string;
 };
 
@@ -61,6 +63,20 @@ export type PortalProfile = {
   user_id: string;
   role: PortalRole;
   client_id: string | null;
+};
+
+export type PortalReadState = {
+  user_id: string;
+  client_id: string;
+  messages_seen_at: string;
+  updates_seen_at: string;
+};
+
+/** One row per visible client, returned by the portal_unread_summary() RPC. */
+export type PortalUnreadRow = {
+  client_id: string;
+  unread_messages: number;
+  unread_updates: number;
 };
 
 export type PortalPushSubscription = {
@@ -108,6 +124,12 @@ export type PortalDatabase = {
         >
       >;
       portal_profiles: Table<PortalProfile>;
+      portal_read_state: Table<
+        PortalReadState,
+        { user_id: string; client_id: string } & Partial<
+          Omit<PortalReadState, "user_id" | "client_id">
+        >
+      >;
       portal_push_subscriptions: Table<
         PortalPushSubscription,
         { user_id: string; endpoint: string; p256dh: string; auth: string } & Partial<
@@ -119,7 +141,12 @@ export type PortalDatabase = {
     // a string index signature, and supabase-js resolves a table as
     // `(Tables & Views)[Name]` — which would collapse every table to `never`.
     Views: { [_ in never]: never };
-    Functions: { [_ in never]: never };
+    Functions: {
+      portal_unread_summary: {
+        Args: Record<string, never>;
+        Returns: PortalUnreadRow[];
+      };
+    };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };
   };

@@ -7,7 +7,7 @@ import {
   Routes,
   useLocation,
 } from "react-router-dom";
-import { Home, Loader2, MessageCircle, Phone } from "lucide-react";
+import { Home, Loader2, MessageCircle, Phone, Users } from "lucide-react";
 import CodeGate from "./components/CodeGate";
 import Chat from "./components/Chat";
 import PortalShell, { type NavItem } from "./components/PortalShell";
@@ -17,12 +17,20 @@ import ClientContact from "./pages/ClientContact";
 import ClientHome from "./pages/ClientHome";
 import { db } from "./lib/db";
 import { PortalSessionProvider, usePortalSession } from "./lib/session";
+import { PortalThemeProvider } from "./lib/theme";
+import { PortalUnreadProvider, usePortalUnread } from "./lib/unread";
 import type { PortalClient } from "./lib/types";
 
-const CLIENT_NAV: NavItem[] = [
+const CLIENT_NAV: Omit<NavItem, "badge">[] = [
   { to: "/", label: "Projekt", icon: Home, end: true },
   { to: "/chat", label: "Chat", icon: MessageCircle },
   { to: "/kontakt", label: "Kontakt", icon: Phone },
+];
+
+// A single entry, but it keeps the desktop sidebar from being an empty column
+// and gives the client detail screen a way back that isn't the browser button.
+const ADMIN_NAV: Omit<NavItem, "badge">[] = [
+  { to: "/admin", label: "Klienti", icon: Users, end: true },
 ];
 
 function FullScreenLoader() {
@@ -33,13 +41,26 @@ function FullScreenLoader() {
   );
 }
 
-function ClientLayout({ clientName }: { clientName: string }) {
+function ClientLayout({ clientName, clientId }: { clientName: string; clientId: string }) {
   const { pathname } = useLocation();
+  const { byClient } = usePortalUnread();
+  const unread = byClient.get(clientId);
+
+  const nav: NavItem[] = CLIENT_NAV.map((item) => ({
+    ...item,
+    badge:
+      item.to === "/chat"
+        ? unread?.unread_messages ?? 0
+        : item.to === "/"
+          ? unread?.unread_updates ?? 0
+          : 0,
+  }));
+
   return (
     <PortalShell
       title="MYVE"
       subtitle={clientName}
-      nav={CLIENT_NAV}
+      nav={nav}
       fullBleed={pathname === "/chat"}
     >
       <Outlet />
@@ -70,7 +91,7 @@ function ClientRoutes({ clientId }: { clientId: string }) {
 
   return (
     <Routes>
-      <Route element={<ClientLayout clientName={name} />}>
+      <Route element={<ClientLayout clientName={name} clientId={clientId} />}>
         <Route index element={<ClientHome />} />
         <Route path="chat" element={<ClientChatRoute clientId={clientId} />} />
         <Route path="kontakt" element={<ClientContact />} />
@@ -82,10 +103,15 @@ function ClientRoutes({ clientId }: { clientId: string }) {
 
 function AdminLayout() {
   const { pathname } = useLocation();
+  const { totalMessages } = usePortalUnread();
   // The client detail screen hosts the chat, which manages its own scrolling.
   const isDetail = /^\/admin\/[^/]+$/.test(pathname);
+
+  // One badge for the whole roster — which client it is shows in the list.
+  const nav: NavItem[] = ADMIN_NAV.map((item) => ({ ...item, badge: totalMessages }));
+
   return (
-    <PortalShell title="MYVE" subtitle="Správa portálu" nav={[]} fullBleed={isDetail}>
+    <PortalShell title="MYVE" subtitle="Správa portálu" nav={nav} fullBleed={isDetail}>
       <Outlet />
     </PortalShell>
   );
@@ -149,10 +175,15 @@ function PortalRouter() {
 
 export default function PortalApp() {
   return (
-    <PortalSessionProvider>
-      <BrowserRouter>
-        <PortalRouter />
-      </BrowserRouter>
-    </PortalSessionProvider>
+    <PortalThemeProvider>
+      <PortalSessionProvider>
+        {/* Inside the session provider: the counts are per signed-in user. */}
+        <PortalUnreadProvider>
+          <BrowserRouter>
+            <PortalRouter />
+          </BrowserRouter>
+        </PortalUnreadProvider>
+      </PortalSessionProvider>
+    </PortalThemeProvider>
   );
 }
