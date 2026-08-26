@@ -113,22 +113,18 @@ export async function enablePush(): Promise<PushState> {
     applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
   });
 
-  const { data } = await supabase.auth.getUser();
-  const userId = data.user?.id;
-  if (!userId) throw new Error("Nejste přihlášeni.");
-
   const json = subscription.toJSON();
-  const { error } = await db.from("portal_push_subscriptions").upsert(
-    {
-      user_id: userId,
-      endpoint: subscription.endpoint,
-      platform: "web",
-      p256dh: json.keys?.p256dh ?? arrayBufferToBase64(subscription.getKey("p256dh")),
-      auth: json.keys?.auth ?? arrayBufferToBase64(subscription.getKey("auth")),
-      user_agent: navigator.userAgent,
-    },
-    { onConflict: "endpoint" },
-  );
+  // An RPC rather than an upsert: this browser may already be registered to
+  // whoever signed in before, and `on conflict do update` needs to *see* that
+  // row through the SELECT policy, which only exposes your own. See
+  // 20260826200000_portal_claim_push_subscription.sql.
+  const { error } = await db.rpc("portal_claim_push_subscription", {
+    p_endpoint: subscription.endpoint,
+    p_platform: "web",
+    p_p256dh: json.keys?.p256dh ?? arrayBufferToBase64(subscription.getKey("p256dh")),
+    p_auth: json.keys?.auth ?? arrayBufferToBase64(subscription.getKey("auth")),
+    p_user_agent: navigator.userAgent,
+  });
   if (error) throw new Error(error.message);
 
   return "on";

@@ -169,6 +169,20 @@ export type PortalDatabase = {
         Args: Record<string, never>;
         Returns: PortalUnreadRow[];
       };
+      // A plain upsert can't do this: `on conflict do update` needs the
+      // conflicting row to be visible through the SELECT policy, and a device
+      // registered by a previous account is not. Runs security definer and
+      // always writes auth.uid() as the owner.
+      portal_claim_push_subscription: {
+        Args: {
+          p_endpoint: string;
+          p_platform: PortalPushPlatform;
+          p_p256dh?: string | null;
+          p_auth?: string | null;
+          p_user_agent?: string | null;
+        };
+        Returns: undefined;
+      };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };

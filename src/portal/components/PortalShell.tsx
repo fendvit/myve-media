@@ -3,7 +3,6 @@ import { NavLink } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import UnreadBadge from "./UnreadBadge";
-import { usePortalTheme } from "../lib/theme";
 
 export interface NavItem {
   to: string;
@@ -27,48 +26,38 @@ interface PortalShellProps {
 }
 
 /**
- * The client's own mark where our wordmark used to be, with ours demoted to a
- * credit line — the portal should read as their project, not our product.
+ * The client's logo, drawn bare — no tile, no plate, in either theme.
  *
- * Light theme's own background already reads as white, so the logo sits
- * straight on it — a tile there was a flat sticker drawn on top of a surface
- * that already matched it. Dark theme still gets a soft backdrop, since a
- * client's logo is almost always drawn for white paper and dark lettering
- * would vanish without one — but it's a tight, softly shadowed chip sized to
- * the mark rather than a stark block, so it reads as part of the header.
+ * An earlier version put it on a white rectangle so that a logo drawn for white
+ * paper could not disappear against the dark theme. It reads as a sticker
+ * pasted onto the header, which is worse than the problem it solves: this is
+ * the client's own mark and it should sit in the chrome, not on top of it. A
+ * client whose logo is dark-on-transparent will look faint in dark mode — the
+ * fix for that is a second, dark-mode logo upload, not a box around this one.
  */
-function Brand({
+function ClientLogo({ src, alt, className }: { src: string; alt: string; className: string }) {
+  return <img src={src} alt={alt} className={`w-auto max-w-full object-contain ${className}`} />;
+}
+
+/**
+ * Desktop sidebar branding: the client's mark where our wordmark used to be,
+ * with ours demoted to a credit line — the portal should read as their project,
+ * not our product. The phone header splits these apart instead (see below).
+ */
+function SidebarBrand({
   logoUrl,
   title,
   subtitle,
-  compact,
 }: {
   logoUrl?: string | null;
   title: string;
   subtitle?: string;
-  compact: boolean;
 }) {
-  const { theme } = usePortalTheme();
-
   if (logoUrl) {
-    const img = (
-      <img
-        src={logoUrl}
-        alt={subtitle ?? title}
-        className={`w-auto max-w-full object-contain ${compact ? "max-h-5" : "max-h-8"}`}
-      />
-    );
-
     return (
       <div className="min-w-0">
-        {theme === "dark" ? (
-          <span className="inline-flex max-w-full items-center rounded-lg bg-white/95 px-2 py-1 shadow-sm">
-            {img}
-          </span>
-        ) : (
-          img
-        )}
-        <p className={`text-muted-foreground ${compact ? "text-[10px] mt-1" : "text-xs mt-2"}`}>
+        <ClientLogo src={logoUrl} alt={subtitle ?? title} className="max-h-8" />
+        <p className="text-xs text-muted-foreground mt-2">
           od <span className="wordmark-myve">{title}</span>
         </p>
       </div>
@@ -77,16 +66,8 @@ function Brand({
 
   return (
     <div className="min-w-0">
-      <p className={`display-type wordmark-myve ${compact ? "text-xl leading-none" : "text-3xl"}`}>
-        {title}
-      </p>
-      {subtitle && (
-        <p
-          className={`truncate text-muted-foreground ${compact ? "text-xs mt-1" : "text-sm mt-1.5"}`}
-        >
-          {subtitle}
-        </p>
-      )}
+      <p className="display-type wordmark-myve text-3xl">{title}</p>
+      {subtitle && <p className="truncate text-sm text-muted-foreground mt-1.5">{subtitle}</p>}
     </div>
   );
 }
@@ -111,7 +92,7 @@ export default function PortalShell({
     <div className="h-[100dvh] flex bg-background text-foreground overflow-hidden">
       <aside className="hidden lg:flex w-[var(--portal-sidebar-w)] shrink-0 flex-col border-r border-border bg-card">
         <div className="px-5 py-6">
-          <Brand logoUrl={logoUrl} title={title} subtitle={subtitle} compact={false} />
+          <SidebarBrand logoUrl={logoUrl} title={title} subtitle={subtitle} />
         </div>
 
         {nav.length > 0 && (
@@ -158,9 +139,27 @@ export default function PortalShell({
           className="lg:hidden shrink-0 border-b border-border bg-card/85 backdrop-blur-md"
           style={{ paddingTop: "env(safe-area-inset-top)" }}
         >
-          <div className="mx-auto w-full max-w-3xl px-4 h-16 flex items-center justify-between gap-2">
-            <Brand logoUrl={logoUrl} title={title} subtitle={subtitle} compact />
-            <div className="flex items-center gap-0.5 shrink-0">
+          {/* Three slots, not a row of two: ours on the left, the client's
+              centred, the theme control on the right. The two outer slots are
+              locked to the same width so the logo is centred against the header
+              itself rather than against whatever is left over — otherwise it
+              drifts sideways as the wordmark and the button differ in size. */}
+          <div className="mx-auto w-full max-w-3xl px-4 h-16 flex items-center gap-2">
+            <div className="w-16 shrink-0">
+              <p className="display-type wordmark-myve text-xl leading-none">{title}</p>
+            </div>
+
+            <div className="flex-1 min-w-0 flex justify-center">
+              {logoUrl ? (
+                <ClientLogo src={logoUrl} alt={subtitle ?? title} className="max-h-8" />
+              ) : (
+                subtitle && (
+                  <p className="truncate text-sm font-medium text-muted-foreground">{subtitle}</p>
+                )
+              )}
+            </div>
+
+            <div className="w-16 shrink-0 flex justify-end">
               <ThemeToggle />
             </div>
           </div>

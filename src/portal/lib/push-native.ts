@@ -5,7 +5,7 @@
 
 import { Capacitor } from "@capacitor/core";
 import { PushNotifications } from "@capacitor/push-notifications";
-import { db, supabase } from "./db";
+import { db } from "./db";
 import type { PortalPushPlatform } from "./types";
 
 /**
@@ -106,21 +106,18 @@ export async function enableNativePush(): Promise<"on" | "off" | "denied"> {
 
   const token = await registerForToken();
 
-  const { data } = await supabase.auth.getUser();
-  const userId = data.user?.id;
-  if (!userId) throw new Error("Nejste přihlášeni.");
-
   // p256dh/auth are deliberately absent — a check constraint rejects native rows
   // that carry a Web Push key pair.
-  const { error } = await db.from("portal_push_subscriptions").upsert(
-    {
-      user_id: userId,
-      endpoint: token,
-      platform: nativePlatform(),
-      user_agent: navigator.userAgent,
-    },
-    { onConflict: "endpoint" },
-  );
+  //
+  // An RPC rather than an upsert: this phone may already be registered to the
+  // account that used it before, and `on conflict do update` needs to *see*
+  // that row through the SELECT policy, which only exposes your own. See
+  // 20260826200000_portal_claim_push_subscription.sql.
+  const { error } = await db.rpc("portal_claim_push_subscription", {
+    p_endpoint: token,
+    p_platform: nativePlatform(),
+    p_user_agent: navigator.userAgent,
+  });
   if (error) throw new Error(error.message);
 
   rememberToken(token);
