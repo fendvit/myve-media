@@ -84,11 +84,40 @@ function ClientChatRoute({ clientId }: { clientId: string }) {
   return <Chat clientId={clientId} as="client" />;
 }
 
+/**
+ * Shown when the profile still points at a client the session can no longer
+ * read — in practice, one that was archived while they were signed in.
+ */
+function AccessEnded() {
+  const { signOut } = usePortalSession();
+
+  return (
+    <div className="h-[100dvh] flex flex-col items-center justify-center gap-3 bg-background px-6 text-center">
+      <p className="font-display font-semibold">Přístup do portálu byl ukončen</p>
+      <p className="text-sm text-muted-foreground max-w-xs">
+        Pokud je to omylem, ozvěte se nám a hned to napravíme.
+      </p>
+      <button
+        type="button"
+        onClick={signOut}
+        className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-4"
+      >
+        Odhlásit se
+      </button>
+    </div>
+  );
+}
+
 function ClientRoutes({ clientId }: { clientId: string }) {
-  const [brand, setBrand] = useState<{ name: string; logo: string | null }>({
-    name: "",
-    logo: null,
-  });
+  // "revoked" and not just an empty name: archiving a client makes their own row
+  // invisible to them (portal_my_client_id returns null for an archived client),
+  // and so does every project and message. Without this the portal would still
+  // open and simply look empty, which reads as a bug rather than as an ending.
+  const [brand, setBrand] = useState<{
+    status: "loading" | "ok" | "revoked";
+    name: string;
+    logo: string | null;
+  }>({ status: "loading", name: "", logo: null });
 
   useEffect(() => {
     let active = true;
@@ -96,15 +125,23 @@ function ClientRoutes({ clientId }: { clientId: string }) {
       .select("name, logo_url")
       .eq("id", clientId)
       .maybeSingle()
-      .then(({ data }) => {
+      .then(({ data, error }) => {
         if (!active) return;
         const row = data as Pick<PortalClient, "name" | "logo_url"> | null;
-        setBrand({ name: row?.name ?? "", logo: row?.logo_url ?? null });
+        // A failed request is not the same as a row that isn't there; only the
+        // latter means access is gone. Offline should not read as "ended".
+        if (!row) {
+          setBrand({ status: error ? "loading" : "revoked", name: "", logo: null });
+          return;
+        }
+        setBrand({ status: "ok", name: row.name, logo: row.logo_url });
       });
     return () => {
       active = false;
     };
   }, [clientId]);
+
+  if (brand.status === "revoked") return <AccessEnded />;
 
   return (
     <Routes>

@@ -48,6 +48,37 @@ export async function redeemAccessCode(code: string): Promise<RedeemResult> {
   return payload as RedeemResult;
 }
 
+/**
+ * Deletes a client for good — their projects, chat, files and login with them.
+ *
+ * Goes through an edge function because the auth user and the storage objects
+ * are outside what an admin's own token can reach; see
+ * supabase/functions/delete-client. `confirmName` must match the client's name
+ * and is re-checked on the server.
+ *
+ * Throws with a human-readable Czech message the caller can surface directly.
+ */
+export async function deleteClient(clientId: string, confirmName: string): Promise<void> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) throw new Error("Přihlaste se prosím znovu.");
+
+  const response = await fetch(`${FUNCTIONS_BASE}/delete-client`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ client_id: clientId, confirm_name: confirmName }),
+  });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null);
+    throw new Error(payload?.error ?? "Smazání se nezdařilo.");
+  }
+}
+
 /** Attachments live under `<client_id>/…`, which is what storage RLS checks. */
 export async function uploadAttachment(clientId: string, file: File): Promise<{
   path: string;

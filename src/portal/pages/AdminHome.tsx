@@ -15,6 +15,73 @@ interface Row extends PortalClient {
   projects: PortalProject[];
 }
 
+function ClientCard({
+  row,
+  unread,
+  copied,
+  onCopy,
+}: {
+  row: Row;
+  unread: number;
+  copied: boolean;
+  onCopy: (client: PortalClient) => void;
+}) {
+  return (
+    <li
+      className={[
+        "bg-card border rounded-2xl overflow-hidden transition-shadow hover:[box-shadow:var(--shadow-card-hover)]",
+        // A waiting client is worth finding at a glance in a long list.
+        unread > 0 ? "border-primary/40" : "border-border",
+        // Archived rows stay legible but visibly out of the running.
+        row.archived ? "opacity-60" : "",
+      ].join(" ")}
+      style={{ boxShadow: "var(--shadow-card)" }}
+    >
+      <Link
+        to={`/admin/${row.id}`}
+        className="flex items-center gap-3 p-4 hover:bg-secondary/50 transition-colors"
+      >
+        <div className="flex-1 min-w-0">
+          <p
+            className={["font-display truncate", unread > 0 ? "font-bold" : "font-semibold"].join(
+              " ",
+            )}
+          >
+            {row.name}
+          </p>
+          <p className="text-xs text-muted-foreground truncate">
+            {row.projects.length === 0
+              ? "Žádný projekt"
+              : row.projects.map((project) => project.name).join(" · ")}
+          </p>
+        </div>
+        <UnreadBadge count={unread} variant="inline" />
+        <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+      </Link>
+
+      <div className="flex items-center gap-2 px-4 py-3 border-t border-border bg-secondary/30">
+        <span className="text-[11px] text-muted-foreground shrink-0">Kód</span>
+        <code className="font-display tracking-widest text-sm flex-1">{row.access_code}</code>
+        <span className="text-[11px] text-muted-foreground shrink-0 hidden sm:inline">
+          {formatDate(row.created_at)}
+        </span>
+        <button
+          type="button"
+          onClick={() => onCopy(row)}
+          className="shrink-0 text-muted-foreground hover:text-primary transition-colors p-1"
+          aria-label="Zkopírovat kód"
+        >
+          {copied ? (
+            <Check className="h-4 w-4 text-primary" />
+          ) : (
+            <Copy className="h-4 w-4" />
+          )}
+        </button>
+      </div>
+    </li>
+  );
+}
+
 export default function AdminHome() {
   const { signOut } = usePortalSession();
   const { byClient } = usePortalUnread();
@@ -29,13 +96,16 @@ export default function AdminHome() {
   const [saving, setSaving] = useState(false);
 
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
 
   async function load() {
     setLoading(true);
+    // Archived clients are fetched too, but kept behind a fold: without them on
+    // this page there is no way back to one, and restoring or deleting for good
+    // both live on the client's own screen.
     const { data, error: loadError } = await db
       .from("portal_clients")
       .select("*, projects:portal_projects(*)")
-      .eq("archived", false)
       .order("created_at", { ascending: false });
 
     if (loadError) setError(loadError.message);
@@ -85,15 +155,18 @@ export default function AdminHome() {
     setTimeout(() => setCopiedId(null), 1800);
   }
 
+  const active = rows.filter((row) => !row.archived);
+  const archived = rows.filter((row) => row.archived);
+
   return (
     <div className="space-y-5 portal-rise">
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="font-display text-2xl lg:text-3xl font-bold tracking-tight">Klienti</h2>
-          {!loading && rows.length > 0 && (
+          {!loading && active.length > 0 && (
             <p className="text-xs text-muted-foreground mt-0.5">
-              {rows.length} aktivních ·{" "}
-              {rows.reduce((total, row) => total + row.projects.length, 0)} projektů
+              {active.length} aktivních ·{" "}
+              {active.reduce((total, row) => total + row.projects.length, 0)} projektů
             </p>
           )}
         </div>
@@ -182,68 +255,56 @@ export default function AdminHome() {
           Zatím žádní klienti. Přidejte prvního a pošlete mu vygenerovaný kód.
         </p>
       ) : (
-        <ul className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
-          {rows.map((row) => {
-            const unread = byClient.get(row.id)?.unread_messages ?? 0;
+        <>
+          {active.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-16">
+              Všichni klienti jsou v archivu.
+            </p>
+          ) : (
+            <ul className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
+              {active.map((row) => (
+                <ClientCard
+                  key={row.id}
+                  row={row}
+                  unread={byClient.get(row.id)?.unread_messages ?? 0}
+                  copied={copiedId === row.id}
+                  onCopy={copyCode}
+                />
+              ))}
+            </ul>
+          )}
 
-            return (
-              <li
-                key={row.id}
-                className={[
-                  "bg-card border rounded-2xl overflow-hidden transition-shadow hover:[box-shadow:var(--shadow-card-hover)]",
-                  // A waiting client is worth finding at a glance in a long list.
-                  unread > 0 ? "border-primary/40" : "border-border",
-                ].join(" ")}
-                style={{ boxShadow: "var(--shadow-card)" }}
+          {archived.length > 0 && (
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setShowArchived((current) => !current)}
+                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                <Link
-                  to={`/admin/${row.id}`}
-                  className="flex items-center gap-3 p-4 hover:bg-secondary/50 transition-colors"
-                >
-                  <div className="flex-1 min-w-0">
-                    <p
-                      className={[
-                        "font-display truncate",
-                        unread > 0 ? "font-bold" : "font-semibold",
-                      ].join(" ")}
-                    >
-                      {row.name}
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {row.projects.length === 0
-                        ? "Žádný projekt"
-                        : row.projects.map((project) => project.name).join(" · ")}
-                    </p>
-                  </div>
-                  <UnreadBadge count={unread} variant="inline" />
-                  <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                </Link>
+                <ChevronRight
+                  className={`h-4 w-4 transition-transform ${showArchived ? "rotate-90" : ""}`}
+                />
+                Archiv ({archived.length})
+              </button>
 
-                <div className="flex items-center gap-2 px-4 py-3 border-t border-border bg-secondary/30">
-                  <span className="text-[11px] text-muted-foreground shrink-0">Kód</span>
-                  <code className="font-display tracking-widest text-sm flex-1">
-                    {row.access_code}
-                  </code>
-                  <span className="text-[11px] text-muted-foreground shrink-0 hidden sm:inline">
-                    {formatDate(row.created_at)}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => copyCode(row)}
-                    className="shrink-0 text-muted-foreground hover:text-primary transition-colors p-1"
-                    aria-label="Zkopírovat kód"
-                  >
-                    {copiedId === row.id ? (
-                      <Check className="h-4 w-4 text-primary" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
-                  </button>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+              {showArchived && (
+                <ul className="mt-3 space-y-3 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
+                  {archived.map((row) => (
+                    <ClientCard
+                      key={row.id}
+                      row={row}
+                      // portal_unread_summary() skips archived clients, so an
+                      // archived card never carries a badge.
+                      unread={0}
+                      copied={copiedId === row.id}
+                      onCopy={copyCode}
+                    />
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

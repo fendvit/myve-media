@@ -1,12 +1,22 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Check, Copy, ImagePlus, Loader2, Plus, Trash2 } from "lucide-react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import {
+  Archive,
+  ArchiveRestore,
+  ArrowLeft,
+  Check,
+  Copy,
+  ImagePlus,
+  Loader2,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Chat from "../components/Chat";
 import UpdateBody from "../components/UpdateBody";
 import UpdateComposer from "../components/UpdateComposer";
-import { db, uploadClientLogo } from "../lib/db";
+import { db, deleteClient, uploadClientLogo } from "../lib/db";
 import { relativeFromNow } from "../lib/format";
 import { notifyProjectProgress, notifyProjectUpdate } from "../lib/push";
 import { STATUS_PRESETS, statusTone } from "../lib/status";
@@ -257,6 +267,145 @@ function LogoField({ client, onChanged }: { client: PortalClient; onChanged: () 
   );
 }
 
+/** Compares the way a person typing a name into a box expects it to compare. */
+function sameName(a: string, b: string): boolean {
+  return a.trim().toLocaleLowerCase("cs") === b.trim().toLocaleLowerCase("cs");
+}
+
+/**
+ * Ending a client, in the two flavours that mean different things.
+ *
+ * Archiving is the everyday one: the client drops out of the roster and loses
+ * access on every device they are signed in on, but nothing is lost and one
+ * click brings them back. Deleting is behind a retyped name because it takes
+ * the chat, the files and the whole history with it.
+ */
+function DangerZone({ client, onChanged }: { client: PortalClient; onChanged: () => void }) {
+  const navigate = useNavigate();
+  const [busy, setBusy] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [typedName, setTypedName] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  async function toggleArchived() {
+    setBusy(true);
+    setError(null);
+    const { error: saveError } = await db
+      .from("portal_clients")
+      .update({ archived: !client.archived })
+      .eq("id", client.id);
+    setBusy(false);
+    if (saveError) setError(saveError.message);
+    else onChanged();
+  }
+
+  async function remove() {
+    setBusy(true);
+    setError(null);
+    try {
+      await deleteClient(client.id, typedName);
+      // replace: the detail route for a deleted client would only render
+      // "Klient nenalezen" if the back button returned to it.
+      navigate("/admin", { replace: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Smazání se nezdařilo.");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="rounded-2xl border border-border p-5 space-y-4">
+      <div>
+        <h3 className="font-display font-semibold">Ukončit spolupráci</h3>
+        <p className="text-sm text-muted-foreground leading-relaxed mt-1">
+          {client.archived
+            ? "Klient je archivovaný — nevidíte ho v seznamu a on se do portálu nedostane. Obnovením se mu přístup vrátí."
+            : "Archivace klienta schová a okamžitě mu vezme přístup k portálu, ale všechno zůstane uložené. Můžete ji kdykoli vrátit."}
+        </p>
+      </div>
+
+      <Button
+        onClick={toggleArchived}
+        disabled={busy}
+        variant="secondary"
+        size="sm"
+        className="rounded-xl font-display"
+      >
+        {busy ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : client.archived ? (
+          <>
+            <ArchiveRestore className="h-4 w-4 mr-1.5" /> Obnovit klienta
+          </>
+        ) : (
+          <>
+            <Archive className="h-4 w-4 mr-1.5" /> Archivovat klienta
+          </>
+        )}
+      </Button>
+
+      <div className="border-t border-border pt-4">
+        {!confirming ? (
+          <button
+            type="button"
+            onClick={() => setConfirming(true)}
+            className="text-sm text-muted-foreground hover:text-destructive transition-colors"
+          >
+            Smazat klienta natrvalo
+          </button>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Smaže projekty, všechny záznamy, celý chat i s přílohami, logo a přihlášení
+              klienta. Tohle nejde vrátit. Pro potvrzení napište{" "}
+              <strong className="text-foreground">{client.name}</strong>.
+            </p>
+            <Input
+              value={typedName}
+              onChange={(event) => setTypedName(event.target.value)}
+              placeholder={client.name}
+              autoFocus
+              className="rounded-xl"
+            />
+            <div className="flex gap-2">
+              <Button
+                onClick={remove}
+                disabled={busy || !sameName(typedName, client.name)}
+                variant="destructive"
+                size="sm"
+                className="rounded-xl font-display"
+              >
+                {busy ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4 mr-1.5" /> Smazat natrvalo
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={() => {
+                  setConfirming(false);
+                  setTypedName("");
+                  setError(null);
+                }}
+                disabled={busy}
+                variant="ghost"
+                size="sm"
+                className="rounded-xl font-display"
+              >
+                Zrušit
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {error && <p className="text-sm text-destructive">{error}</p>}
+    </section>
+  );
+}
+
 export default function AdminClient() {
   const { clientId } = useParams<{ clientId: string }>();
   const [client, setClient] = useState<PortalClient | null>(null);
@@ -332,6 +481,11 @@ export default function AdminClient() {
           <h2 className="font-display text-2xl lg:text-3xl font-bold tracking-tight">
             {client.name}
           </h2>
+          {client.archived && (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary px-3 py-1 text-xs text-muted-foreground">
+              <Archive className="h-3.5 w-3.5" /> Archivováno
+            </span>
+          )}
           <button
             type="button"
             onClick={copyCode}
@@ -408,6 +562,8 @@ export default function AdminClient() {
                 <ProjectCard key={project.id} project={project} onChanged={load} />
               ))
             )}
+
+            <DangerZone client={client} onChanged={load} />
           </div>
         </div>
       ) : (
