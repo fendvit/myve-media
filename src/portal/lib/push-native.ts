@@ -9,9 +9,15 @@ import { db } from "./db";
 import type { PortalPushPlatform } from "./types";
 
 /**
- * The token this device last registered. Permission alone doesn't tell us
- * whether *this* device has a live subscription — a user with two phones would
- * otherwise see "on" on both after enabling it on one.
+ * The FCM token this device last registered — the native equivalent of
+ * `pushManager.getSubscription()`, which Capacitor has no API for.
+ *
+ * It is a property of the *device*, not of the account: it is what we look the
+ * subscription row up by, and both accounts on a shared phone look it up by the
+ * same value. So it is only ever written (never cleared) when a state turns out
+ * to be off — a missing row means this account isn't subscribed, not that the
+ * device's token is gone, and throwing the token away on that would make the
+ * *other* account's toggle read off too.
  */
 const TOKEN_KEY = "myve-portal-fcm-token";
 
@@ -27,10 +33,9 @@ function rememberedToken(): string | null {
   }
 }
 
-function rememberToken(token: string | null) {
+function rememberToken(token: string) {
   try {
-    if (token) localStorage.setItem(TOKEN_KEY, token);
-    else localStorage.removeItem(TOKEN_KEY);
+    localStorage.setItem(TOKEN_KEY, token);
   } catch {
     // A device with storage disabled still gets notifications; it just can't
     // show an accurate toggle. Not worth failing the whole flow over.
@@ -81,19 +86,18 @@ export async function getNativePushState(): Promise<"on" | "off" | "denied"> {
   const token = rememberedToken();
   if (!token) return "off";
 
-  // Confirm the row still exists: the server prunes tokens FCM reports as dead,
-  // and showing "on" for a subscription that was pruned would be a lie.
+  // Confirm a row exists *for this account*: the server prunes tokens FCM
+  // reports as dead, and RLS narrows the select to our own rows, so an empty
+  // result means either the subscription was pruned or it belongs to somebody
+  // else who signed in on this device. Both are "off" for the person looking at
+  // the toggle. The token stays cached either way — see TOKEN_KEY.
   const { data } = await db
     .from("portal_push_subscriptions")
     .select("id")
     .eq("endpoint", token)
     .limit(1);
 
-  if (!data || data.length === 0) {
-    rememberToken(null);
-    return "off";
-  }
-  return "on";
+  return data && data.length > 0 ? "on" : "off";
 }
 
 export async function enableNativePush(): Promise<"on" | "off" | "denied"> {
@@ -109,10 +113,9 @@ export async function enableNativePush(): Promise<"on" | "off" | "denied"> {
   // p256dh/auth are deliberately absent — a check constraint rejects native rows
   // that carry a Web Push key pair.
   //
-  // An RPC rather than an upsert: this phone may already be registered to the
-  // account that used it before, and `on conflict do update` needs to *see*
-  // that row through the SELECT policy, which only exposes your own. See
-  // 20260826200000_portal_claim_push_subscription.sql.
+  // Adds a row for this account without disturbing one another account on the
+  // same phone may already have. See
+  // 20260826210000_portal_push_device_per_account.sql.
   const { error } = await db.rpc("portal_claim_push_subscription", {
     p_endpoint: token,
     p_platform: nativePlatform(),
@@ -127,17 +130,17 @@ export async function enableNativePush(): Promise<"on" | "off" | "denied"> {
 export async function disableNativePush(): Promise<"off"> {
   const token = rememberedToken();
   if (token) {
+    // RLS narrows the delete to our own row, so another account on this phone
+    // keeps its subscription.
     await db.from("portal_push_subscriptions").delete().eq("endpoint", token);
   }
-  rememberToken(null);
 
-  // Drops the OS-level registration too, so the app stops being woken at all
-  // rather than merely having nobody left to send to it.
-  await PushNotifications.unregister().catch(() => {
-    // Already unregistered, or the platform doesn't support it. Either way the
-    // row is gone, which is what the toggle actually reflects.
-  });
-
+  // The OS registration is deliberately left alone. `unregister()` would throw
+  // the device's FCM token away, which is shared: it would silently cut off any
+  // other account signed in here, and their toggle would still claim to be on
+  // until the next send pruned the row. With our row gone nothing is addressed
+  // to us anyway, so the app is never woken on our behalf — which is all the
+  // switch promises.
   return "off";
 }
 

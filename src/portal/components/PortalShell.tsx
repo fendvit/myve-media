@@ -49,9 +49,14 @@ function MyveLogo({ className, alt = "MYVE" }: { className: string; alt?: string
 }
 
 /**
- * Desktop sidebar branding: the client's mark where our wordmark used to be,
- * with ours demoted to a credit line — the portal should read as their project,
- * not our product. The phone header splits these apart instead (see below).
+ * Desktop sidebar branding: the client's mark, alone and at a size that reads as
+ * a logo rather than a favicon. The portal should look like their project.
+ *
+ * Ours used to sit right underneath as an "od MYVE" credit, which made the top
+ * of the sidebar two competing marks stacked on one another — the client's logo
+ * never got to be the thing you look at. MYVE now signs the bottom corner
+ * instead (see the footer), the way a maker's mark belongs on the back of the
+ * object and not across the front. The phone header splits them left/centre.
  */
 function SidebarBrand({
   logoUrl,
@@ -63,21 +68,14 @@ function SidebarBrand({
   subtitle?: string;
 }) {
   if (logoUrl) {
-    return (
-      <div className="min-w-0">
-        <ClientLogo src={logoUrl} alt={subtitle ?? title} className="max-h-8" />
-        <p className="flex items-center gap-1.5 text-xs text-muted-foreground mt-2">
-          od <MyveLogo className="h-3.5" />
-        </p>
-      </div>
-    );
+    return <ClientLogo src={logoUrl} alt={subtitle ?? title} className="max-h-12" />;
   }
 
+  // No logo on file: the client's name carries the slot, set at display weight
+  // so the sidebar still opens on *them*. Falls back to our own name for the
+  // admin shell, where `subtitle` is a section label rather than a client.
   return (
-    <div className="min-w-0">
-      <MyveLogo className="h-7" alt={title} />
-      {subtitle && <p className="truncate text-sm text-muted-foreground mt-2">{subtitle}</p>}
-    </div>
+    <p className="truncate font-display text-lg font-bold leading-tight">{subtitle ?? title}</p>
   );
 }
 
@@ -100,7 +98,9 @@ export default function PortalShell({
   return (
     <div className="h-[100dvh] flex bg-background text-foreground overflow-hidden">
       <aside className="hidden lg:flex w-[var(--portal-sidebar-w)] shrink-0 flex-col border-r border-border bg-card">
-        <div className="px-5 py-6">
+        {/* min-h matches ClientLogo's max-h, so the nav below starts at the same
+            height whether or not the client has a logo on file. */}
+        <div className="px-5 py-6 flex min-h-12 items-center">
           <SidebarBrand logoUrl={logoUrl} title={title} subtitle={subtitle} />
         </div>
 
@@ -138,8 +138,17 @@ export default function PortalShell({
           </nav>
         )}
 
-        <div className={`p-3 ${nav.length > 0 ? "border-t border-border" : "mt-auto"}`}>
-          <ThemeToggle variant="switch" />
+        {/* The bottom corner: our mark on the left, the theme control on the
+            right. The labelled switch that used to fill this row is now an icon
+            button, because a full-width "Světlý režim" row read as a fourth nav
+            item sitting below the divider. */}
+        <div
+          className={`flex items-center justify-between gap-3 px-5 py-3 ${
+            nav.length > 0 ? "border-t border-border" : "mt-auto"
+          }`}
+        >
+          <MyveLogo className="h-4 shrink-0" />
+          <ThemeToggle className="-mr-2" />
         </div>
       </aside>
 

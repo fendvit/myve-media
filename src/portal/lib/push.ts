@@ -75,11 +75,9 @@ export async function getPushState(): Promise<PushState> {
   // would keep landing on this screen.
   //
   // RLS restricts select to the caller's own rows, so an empty result means the
-  // row was either pruned as stale by send-push or belongs to somebody else.
-  // Both are "off" for the person looking at the toggle, and switching it on
-  // re-registers the device to them. Native already worked this way; this is
-  // the web half. (The re-registration upsert needs the UPDATE policy from
-  // 20260826180000_portal_push_reassign_update.sql.)
+  // row was either pruned as stale by send-push or was never created for this
+  // account. Both are "off" for the person looking at the toggle, and switching
+  // it on adds their own row alongside whatever the other account has.
   const { data } = await db
     .from("portal_push_subscriptions")
     .select("id")
@@ -114,10 +112,9 @@ export async function enablePush(): Promise<PushState> {
   });
 
   const json = subscription.toJSON();
-  // An RPC rather than an upsert: this browser may already be registered to
-  // whoever signed in before, and `on conflict do update` needs to *see* that
-  // row through the SELECT policy, which only exposes your own. See
-  // 20260826200000_portal_claim_push_subscription.sql.
+  // Adds a row for this account without disturbing one another account in this
+  // browser may already have. See
+  // 20260826210000_portal_push_device_per_account.sql.
   const { error } = await db.rpc("portal_claim_push_subscription", {
     p_endpoint: subscription.endpoint,
     p_platform: "web",
@@ -136,8 +133,14 @@ export async function disablePush(): Promise<PushState> {
   const subscription = await registration?.pushManager.getSubscription();
   if (!subscription) return "off";
 
+  // RLS narrows the delete to our own row, so another account signed in on this
+  // browser keeps its subscription.
   await db.from("portal_push_subscriptions").delete().eq("endpoint", subscription.endpoint);
-  await subscription.unsubscribe();
+
+  // The browser subscription itself is deliberately kept. `unsubscribe()`
+  // invalidates the endpoint for the whole browser, which would silently cut off
+  // any other account registered here; and with our row gone nothing is
+  // addressed to us anyway. Re-enabling just hands back the same subscription.
   return "off";
 }
 
