@@ -18,6 +18,8 @@ export type PortalClient = {
   name: string;
   contact_email: string | null;
   contact_phone: string | null;
+  /** Public URL in the portal-logos bucket. Null means fall back to the MYVE wordmark. */
+  logo_url: string | null;
   access_code: string;
   auth_user_id: string | null;
   archived: boolean;

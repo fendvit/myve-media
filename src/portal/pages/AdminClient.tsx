@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Check, Copy, Loader2, Plus } from "lucide-react";
+import { ArrowLeft, Check, Copy, ImagePlus, Loader2, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Chat from "../components/Chat";
 import UpdateBody from "../components/UpdateBody";
 import UpdateComposer from "../components/UpdateComposer";
-import { db } from "../lib/db";
+import { db, uploadClientLogo } from "../lib/db";
 import { relativeFromNow } from "../lib/format";
+import { notifyProjectProgress, notifyProjectUpdate } from "../lib/push";
 import { STATUS_PRESETS, statusTone } from "../lib/status";
 import type { PortalClient, PortalProject, PortalUpdate } from "../lib/types";
 
@@ -46,20 +47,25 @@ function ProjectCard({
     liveUrl !== (project.live_url ?? "");
 
   async function save() {
+    const progressChanged = progress !== project.progress;
     setSaving(true);
     await db
       .from("portal_projects")
       .update({ status, progress, live_url: liveUrl.trim() || null })
       .eq("id", project.id);
     setSaving(false);
+    if (progressChanged) void notifyProjectProgress(project.id);
     onChanged();
   }
 
   async function postUpdate({ title, body }: { title: string | null; body: string }) {
-    await db
+    const { data } = await db
       .from("portal_updates")
-      .insert({ project_id: project.id, title, body, is_html: true });
+      .insert({ project_id: project.id, title, body, is_html: true })
+      .select()
+      .single();
     await loadUpdates();
+    if (data) void notifyProjectUpdate((data as PortalUpdate).id);
   }
 
   return (
@@ -152,6 +158,105 @@ function ProjectCard({
   );
 }
 
+/**
+ * The client's logo replaces the MYVE wordmark across their whole portal, so it
+ * is edited here next to their name rather than buried in a settings screen.
+ */
+function LogoField({ client, onChanged }: { client: PortalClient; onChanged: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function pick(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    // Reset first: without it, re-picking the same file after a failed upload
+    // fires no change event and the button looks dead.
+    event.target.value = "";
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setError("Nahrajte prosím obrázek.");
+      return;
+    }
+    if (file.size > 2_000_000) {
+      setError("Logo musí být menší než 2 MB.");
+      return;
+    }
+
+    setBusy(true);
+    setError(null);
+    try {
+      const url = await uploadClientLogo(client.id, file);
+      const { error: saveError } = await db
+        .from("portal_clients")
+        .update({ logo_url: url })
+        .eq("id", client.id);
+      if (saveError) throw new Error(saveError.message);
+      onChanged();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Nahrání se nezdařilo.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove() {
+    setBusy(true);
+    setError(null);
+    // Only the reference is cleared; the stored object stays. Every upload
+    // writes a new path anyway, so reclaiming them properly means listing the
+    // folder — not worth it for a few kilobytes per client.
+    const { error: saveError } = await db
+      .from("portal_clients")
+      .update({ logo_url: null })
+      .eq("id", client.id);
+    setBusy(false);
+    if (saveError) setError(saveError.message);
+    else onChanged();
+  }
+
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center gap-2">
+        {client.logo_url && (
+          <span className="inline-flex items-center rounded-lg bg-white px-2 py-1">
+            <img src={client.logo_url} alt="" className="max-h-5 w-auto max-w-24 object-contain" />
+          </span>
+        )}
+
+        <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-dashed border-border px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-solid hover:text-foreground">
+          {busy ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <ImagePlus className="h-3.5 w-3.5" />
+          )}
+          {client.logo_url ? "Změnit logo" : "Přidat logo"}
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={pick}
+            disabled={busy}
+          />
+        </label>
+
+        {client.logo_url && (
+          <button
+            type="button"
+            onClick={remove}
+            disabled={busy}
+            aria-label="Odebrat logo"
+            className="text-muted-foreground transition-colors hover:text-destructive"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
+
+      {error && <p className="text-xs text-destructive">{error}</p>}
+    </div>
+  );
+}
+
 export default function AdminClient() {
   const { clientId } = useParams<{ clientId: string }>();
   const [client, setClient] = useState<PortalClient | null>(null);
@@ -240,6 +345,8 @@ export default function AdminClient() {
               <Copy className="h-3.5 w-3.5" />
             )}
           </button>
+
+          <LogoField client={client} onChanged={load} />
         </div>
 
         <div className="flex gap-1 bg-secondary rounded-xl p-1 my-4 lg:max-w-xs">

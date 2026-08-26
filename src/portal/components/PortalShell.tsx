@@ -1,10 +1,9 @@
 import type { ReactNode } from "react";
 import { NavLink } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
-import { LogOut } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import UnreadBadge from "./UnreadBadge";
-import { usePortalSession } from "../lib/session";
+import { usePortalTheme } from "../lib/theme";
 
 export interface NavItem {
   to: string;
@@ -23,6 +22,73 @@ interface PortalShellProps {
   children: ReactNode;
   /** Chat manages its own scrolling, so it opts out of the padded scroll area. */
   fullBleed?: boolean;
+  /** Client logo. When set it takes the wordmark's place and MYVE is credited under it. */
+  logoUrl?: string | null;
+}
+
+/**
+ * The client's own mark where our wordmark used to be, with ours demoted to a
+ * credit line — the portal should read as their project, not our product.
+ *
+ * Light theme's own background already reads as white, so the logo sits
+ * straight on it — a tile there was a flat sticker drawn on top of a surface
+ * that already matched it. Dark theme still gets a soft backdrop, since a
+ * client's logo is almost always drawn for white paper and dark lettering
+ * would vanish without one — but it's a tight, softly shadowed chip sized to
+ * the mark rather than a stark block, so it reads as part of the header.
+ */
+function Brand({
+  logoUrl,
+  title,
+  subtitle,
+  compact,
+}: {
+  logoUrl?: string | null;
+  title: string;
+  subtitle?: string;
+  compact: boolean;
+}) {
+  const { theme } = usePortalTheme();
+
+  if (logoUrl) {
+    const img = (
+      <img
+        src={logoUrl}
+        alt={subtitle ?? title}
+        className={`w-auto max-w-full object-contain ${compact ? "max-h-5" : "max-h-8"}`}
+      />
+    );
+
+    return (
+      <div className="min-w-0">
+        {theme === "dark" ? (
+          <span className="inline-flex max-w-full items-center rounded-lg bg-white/95 px-2 py-1 shadow-sm">
+            {img}
+          </span>
+        ) : (
+          img
+        )}
+        <p className={`text-muted-foreground ${compact ? "text-[10px] mt-1" : "text-xs mt-2"}`}>
+          od <span className="wordmark-myve">{title}</span>
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-w-0">
+      <p className={`display-type wordmark-myve ${compact ? "text-xl leading-none" : "text-3xl"}`}>
+        {title}
+      </p>
+      {subtitle && (
+        <p
+          className={`truncate text-muted-foreground ${compact ? "text-xs mt-1" : "text-sm mt-1.5"}`}
+        >
+          {subtitle}
+        </p>
+      )}
+    </div>
+  );
 }
 
 /**
@@ -39,17 +105,13 @@ export default function PortalShell({
   nav,
   children,
   fullBleed = false,
+  logoUrl,
 }: PortalShellProps) {
-  const { signOut } = usePortalSession();
-
   return (
     <div className="h-[100dvh] flex bg-background text-foreground overflow-hidden">
       <aside className="hidden lg:flex w-[var(--portal-sidebar-w)] shrink-0 flex-col border-r border-border bg-card">
         <div className="px-5 py-6">
-          <p className="display-type wordmark-myve text-3xl">{title}</p>
-          {subtitle && (
-            <p className="mt-1.5 text-sm text-muted-foreground truncate">{subtitle}</p>
-          )}
+          <Brand logoUrl={logoUrl} title={title} subtitle={subtitle} compact={false} />
         </div>
 
         {nav.length > 0 && (
@@ -86,16 +148,8 @@ export default function PortalShell({
           </nav>
         )}
 
-        <div className={`p-3 space-y-1 ${nav.length > 0 ? "border-t border-border" : "mt-auto"}`}>
+        <div className={`p-3 ${nav.length > 0 ? "border-t border-border" : "mt-auto"}`}>
           <ThemeToggle variant="switch" />
-          <button
-            type="button"
-            onClick={signOut}
-            className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-          >
-            <LogOut className="h-[18px] w-[18px]" />
-            Odhlásit se
-          </button>
         </div>
       </aside>
 
@@ -105,22 +159,9 @@ export default function PortalShell({
           style={{ paddingTop: "env(safe-area-inset-top)" }}
         >
           <div className="mx-auto w-full max-w-3xl px-4 h-16 flex items-center justify-between gap-2">
-            <div className="min-w-0">
-              <p className="display-type wordmark-myve text-xl leading-none">{title}</p>
-              {subtitle && (
-                <p className="text-xs text-muted-foreground truncate mt-1">{subtitle}</p>
-              )}
-            </div>
+            <Brand logoUrl={logoUrl} title={title} subtitle={subtitle} compact />
             <div className="flex items-center gap-0.5 shrink-0">
               <ThemeToggle />
-              <button
-                type="button"
-                onClick={signOut}
-                className="h-9 w-9 grid place-items-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-                aria-label="Odhlásit se"
-              >
-                <LogOut className="h-[18px] w-[18px]" />
-              </button>
             </div>
           </div>
         </header>

@@ -44,7 +44,15 @@ function FullScreenLoader() {
   );
 }
 
-function ClientLayout({ clientName, clientId }: { clientName: string; clientId: string }) {
+function ClientLayout({
+  clientName,
+  clientLogo,
+  clientId,
+}: {
+  clientName: string;
+  clientLogo: string | null;
+  clientId: string;
+}) {
   const { pathname } = useLocation();
   const { byClient } = usePortalUnread();
   const unread = byClient.get(clientId);
@@ -63,6 +71,7 @@ function ClientLayout({ clientName, clientId }: { clientName: string; clientId: 
     <PortalShell
       title="MYVE"
       subtitle={clientName}
+      logoUrl={clientLogo}
       nav={nav}
       fullBleed={pathname === "/chat"}
     >
@@ -76,16 +85,21 @@ function ClientChatRoute({ clientId }: { clientId: string }) {
 }
 
 function ClientRoutes({ clientId }: { clientId: string }) {
-  const [name, setName] = useState("");
+  const [brand, setBrand] = useState<{ name: string; logo: string | null }>({
+    name: "",
+    logo: null,
+  });
 
   useEffect(() => {
     let active = true;
     db.from("portal_clients")
-      .select("name")
+      .select("name, logo_url")
       .eq("id", clientId)
       .maybeSingle()
       .then(({ data }) => {
-        if (active) setName((data as Pick<PortalClient, "name">)?.name ?? "");
+        if (!active) return;
+        const row = data as Pick<PortalClient, "name" | "logo_url"> | null;
+        setBrand({ name: row?.name ?? "", logo: row?.logo_url ?? null });
       });
     return () => {
       active = false;
@@ -94,7 +108,11 @@ function ClientRoutes({ clientId }: { clientId: string }) {
 
   return (
     <Routes>
-      <Route element={<ClientLayout clientName={name} clientId={clientId} />}>
+      <Route
+        element={
+          <ClientLayout clientName={brand.name} clientLogo={brand.logo} clientId={clientId} />
+        }
+      >
         <Route index element={<ClientHome />} />
         <Route path="chat" element={<ClientChatRoute clientId={clientId} />} />
         <Route path="kontakt" element={<ClientContact />} />

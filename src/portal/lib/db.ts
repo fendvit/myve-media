@@ -64,6 +64,27 @@ export async function uploadAttachment(clientId: string, file: File): Promise<{
   return { path, name: file.name };
 }
 
+/**
+ * Stores a client's logo and returns its public URL.
+ *
+ * The path carries a timestamp rather than being a stable `<client_id>.png`:
+ * this bucket is public and therefore CDN-cached, so overwriting one path would
+ * leave the old logo on screen for as long as the edge cache holds it. A fresh
+ * path per upload makes a replacement show up immediately.
+ */
+export async function uploadClientLogo(clientId: string, file: File): Promise<string> {
+  const ext = file.name.split(".").pop()?.replace(/[^\w]/g, "") || "png";
+  const path = `${clientId}/${Date.now()}.${ext}`;
+
+  const { error } = await supabase.storage
+    .from("portal-logos")
+    .upload(path, file, { cacheControl: "31536000", upsert: false });
+
+  if (error) throw new Error(error.message);
+
+  return supabase.storage.from("portal-logos").getPublicUrl(path).data.publicUrl;
+}
+
 /** The bucket is private, so links have to be signed on demand. */
 export async function signAttachment(path: string): Promise<string | null> {
   const { data, error } = await supabase.storage

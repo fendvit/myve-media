@@ -236,10 +236,12 @@ export default function ClientHome() {
         {switcher}
         {welcome}
 
-        <section
-          className="bg-card border border-border rounded-3xl p-6"
-          style={{ boxShadow: "var(--shadow-card)" }}
-        >
+        {/* No card around this. The project is the whole screen, not one item
+            on it — boxing it made the page look like a list with a single
+            entry, and put a border between the client and the one thing they
+            came to read. Rules carry the structure instead, matching the
+            desktop report page. */}
+        <section>
           <span
             className={`inline-block text-[11px] font-medium px-2.5 py-1 rounded-full border ${statusTone(active.status)}`}
           >
@@ -256,7 +258,7 @@ export default function ClientHome() {
             </p>
           )}
 
-          <div className="mt-6">
+          <div className="mt-6 border-t border-border pt-5">
             <div className="flex items-baseline justify-between mb-2">
               <span className="text-xs text-muted-foreground">Průběh</span>
               <span className="font-display text-2xl font-bold tabular-nums leading-none">
@@ -272,18 +274,18 @@ export default function ClientHome() {
               href={active.live_url}
               target="_blank"
               rel="noreferrer"
-              className="mt-6 inline-flex items-center gap-1.5 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/15 transition-colors"
+              className="mt-5 inline-flex items-center gap-1.5 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/15 transition-colors"
             >
               Otevřít projekt <ExternalLink className="h-3.5 w-3.5" />
             </a>
           )}
 
-          <p className="text-xs text-muted-foreground mt-6">
+          <p className="text-xs text-muted-foreground mt-5">
             Založeno {formatDate(active.created_at)}
           </p>
         </section>
 
-        <section>
+        <section className="border-t border-border pt-5">
           <h3 className="font-display font-bold text-lg mb-4 px-1">Co se děje</h3>
 
           {updates.length === 0 ? (

@@ -7,6 +7,7 @@ import NotificationToggle from "../components/NotificationToggle";
 import UnreadBadge from "../components/UnreadBadge";
 import { db } from "../lib/db";
 import { formatDate } from "../lib/format";
+import { usePortalSession } from "../lib/session";
 import { usePortalUnread } from "../lib/unread";
 import type { PortalClient, PortalProject } from "../lib/types";
 
@@ -15,6 +16,7 @@ interface Row extends PortalClient {
 }
 
 export default function AdminHome() {
+  const { signOut } = usePortalSession();
   const { byClient } = usePortalUnread();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
@@ -153,6 +155,20 @@ export default function AdminHome() {
 
       <section className="bg-card border border-border rounded-2xl p-5">
         <NotificationToggle />
+      </section>
+
+      <section className="bg-card border border-border rounded-2xl p-5">
+        <h3 className="font-display font-semibold mb-1">Účet</h3>
+        <p className="text-sm text-muted-foreground leading-relaxed mb-1">
+          Přihlášeno jako správce.
+        </p>
+        <button
+          type="button"
+          onClick={signOut}
+          className="w-full text-left text-sm text-muted-foreground hover:text-destructive transition-colors py-2"
+        >
+          Odhlásit se
+        </button>
       </section>
 
       {error && <p className="text-sm text-destructive">{error}</p>}

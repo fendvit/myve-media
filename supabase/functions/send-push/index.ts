@@ -1,20 +1,25 @@
-// Notifies the *other* side of a portal conversation about a new message.
+// Notifies the client (or, for chat, whichever side didn't just write) about
+// something that happened in their portal.
 //
-// Two transports, chosen per subscription row: Web Push for browsers, FCM for
-// the Capacitor app (see fcm.ts). Web Push doesn't work inside a WebView, and
-// FCM can't reach a desktop browser, so both have to exist.
+// Three kinds of event, one delivery path: a new chat message, a new log entry
+// under a project, or a progress change. Two transports, chosen per
+// subscription row: Web Push for browsers, FCM for the Capacitor app (see
+// fcm.ts). Web Push doesn't work inside a WebView, and FCM can't reach a
+// desktop browser, so both have to exist.
 //
-// Called by the sender's browser right after a message row is inserted. That is
-// deliberately simpler than a database trigger with pg_net: no vault secrets, no
-// extra infrastructure, and the worst case if the sender's tab dies mid-request
-// is a missed notification — the message itself is already committed.
+// Called by the actor's browser right after the underlying row is written.
+// That is deliberately simpler than a database trigger with pg_net: no vault
+// secrets, no extra infrastructure, and the worst case if the tab dies
+// mid-request is a missed notification — the write itself is already committed.
 //
-// The caller's JWT is verified and checked against the message, so a client can
-// only ever trigger notifications for their own thread.
+// The caller's JWT is verified and checked against the row's owner, so a
+// client can only ever trigger notifications for their own thread, and only
+// an admin can trigger update/progress notifications (clients can't edit
+// those, so a client-triggered one would only ever be a forged request).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.48.1";
 import webpush from "npm:web-push@3.6.7";
-import { fcmConfigured, sendFcm } from "./fcm.ts";
+import { fcmConfigured, sendFcm, type PushPayload } from "./fcm.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -37,11 +42,30 @@ function json(body: unknown, status = 200) {
   });
 }
 
-function preview(body: string | null, hasAttachment: boolean): string {
-  if (body && body.trim()) {
-    return body.length > 120 ? `${body.slice(0, 117)}…` : body;
-  }
+function truncate(text: string, max = 120): string {
+  const trimmed = text.trim();
+  return trimmed.length > max ? `${trimmed.slice(0, max - 3)}…` : trimmed;
+}
+
+function messagePreview(body: string | null, hasAttachment: boolean): string {
+  if (body && body.trim()) return truncate(body);
   return hasAttachment ? "Poslal(a) přílohu" : "Nová zpráva";
+}
+
+function stripHtml(html: string): string {
+  return html
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function updatePreview(update: { body: string; is_html: boolean }): string {
+  const text = update.is_html ? stripHtml(update.body) : update.body;
+  return text ? truncate(text) : "Nový záznam";
 }
 
 Deno.serve(async (req) => {
@@ -62,61 +86,114 @@ Deno.serve(async (req) => {
     if (userError || !userData.user) return json({ error: "Unauthorized" }, 401);
     const callerId = userData.user.id;
 
-    const { message_id } = await req.json().catch(() => ({ message_id: null }));
-    if (typeof message_id !== "string") return json({ error: "message_id required" }, 400);
-
-    // --- load the message and the caller's role ---------------------------
-    const [{ data: message }, { data: callerProfile }] = await Promise.all([
-      admin
-        .from("portal_messages")
-        .select("id, client_id, sender_role, body, attachment_url")
-        .eq("id", message_id)
-        .maybeSingle(),
-      admin
-        .from("portal_profiles")
-        .select("role, client_id")
-        .eq("user_id", callerId)
-        .maybeSingle(),
-    ]);
-
-    if (!message) return json({ error: "Message not found" }, 404);
-    if (!callerProfile) return json({ error: "Forbidden" }, 403);
-
-    // The caller must actually be a party to this thread, and must match the
-    // role the message claims to be from.
-    const isAdmin = callerProfile.role === "admin";
-    const ownsThread = callerProfile.client_id === message.client_id;
-    if (!isAdmin && !ownsThread) return json({ error: "Forbidden" }, 403);
-    if (message.sender_role !== callerProfile.role) return json({ error: "Forbidden" }, 403);
-
-    const { data: client } = await admin
-      .from("portal_clients")
-      .select("id, name, auth_user_id")
-      .eq("id", message.client_id)
+    const { data: callerProfile } = await admin
+      .from("portal_profiles")
+      .select("role, client_id")
+      .eq("user_id", callerId)
       .maybeSingle();
+    if (!callerProfile) return json({ error: "Forbidden" }, 403);
+    const isAdmin = callerProfile.role === "admin";
 
-    // --- work out who should be notified ----------------------------------
+    const body = await req.json().catch(() => ({}));
+    const kind = typeof body.kind === "string" ? body.kind : "message";
+
+    // --- work out who should be notified, and with what ------------------
     let recipientIds: string[] = [];
     let title: string;
+    let text: string;
     let url: string;
+    let tag: string;
 
-    if (message.sender_role === "client") {
-      // Client wrote -> notify every admin.
-      const { data: admins } = await admin
-        .from("portal_profiles")
-        .select("user_id")
-        .eq("role", "admin");
-      recipientIds = (admins ?? []).map((row: { user_id: string }) => row.user_id);
-      title = client?.name ? `Nová zpráva — ${client.name}` : "Nová zpráva";
-      url = `${PORTAL_ORIGIN}/admin/${message.client_id}`;
-    } else {
-      // Admin wrote -> notify that one client, if they have ever signed in.
+    if (kind === "message") {
+      const messageId = body.message_id;
+      if (typeof messageId !== "string") return json({ error: "message_id required" }, 400);
+
+      const { data: message } = await admin
+        .from("portal_messages")
+        .select("id, client_id, sender_role, body, attachment_url")
+        .eq("id", messageId)
+        .maybeSingle();
+      if (!message) return json({ error: "Message not found" }, 404);
+
+      const ownsThread = callerProfile.client_id === message.client_id;
+      if (!isAdmin && !ownsThread) return json({ error: "Forbidden" }, 403);
+      if (message.sender_role !== callerProfile.role) return json({ error: "Forbidden" }, 403);
+
+      const { data: client } = await admin
+        .from("portal_clients")
+        .select("id, name, auth_user_id")
+        .eq("id", message.client_id)
+        .maybeSingle();
+
+      if (message.sender_role === "client") {
+        const { data: admins } = await admin.from("portal_profiles").select("user_id").eq("role", "admin");
+        recipientIds = (admins ?? []).map((row: { user_id: string }) => row.user_id);
+        title = client?.name ? `Nová zpráva — ${client.name}` : "Nová zpráva";
+      } else {
+        recipientIds = client?.auth_user_id ? [client.auth_user_id] : [];
+        title = "Máte novou zprávu";
+      }
+      text = messagePreview(message.body, Boolean(message.attachment_url));
+      url = message.sender_role === "client" ? `${PORTAL_ORIGIN}/admin/${message.client_id}` : `${PORTAL_ORIGIN}/chat`;
+      tag = `portal-${message.client_id}`;
+    } else if (kind === "update") {
+      if (!isAdmin) return json({ error: "Forbidden" }, 403);
+      const updateId = body.update_id;
+      if (typeof updateId !== "string") return json({ error: "update_id required" }, 400);
+
+      const { data: update } = await admin
+        .from("portal_updates")
+        .select("id, project_id, title, body, is_html")
+        .eq("id", updateId)
+        .maybeSingle();
+      if (!update) return json({ error: "Update not found" }, 404);
+
+      const { data: project } = await admin
+        .from("portal_projects")
+        .select("id, name, client_id")
+        .eq("id", update.project_id)
+        .maybeSingle();
+      if (!project) return json({ error: "Project not found" }, 404);
+
+      const { data: client } = await admin
+        .from("portal_clients")
+        .select("auth_user_id")
+        .eq("id", project.client_id)
+        .maybeSingle();
+
       recipientIds = client?.auth_user_id ? [client.auth_user_id] : [];
-      title = "MYVE";
-      url = `${PORTAL_ORIGIN}/chat`;
+      title = update.title ? `${project.name} — ${update.title}` : `Nový záznam u projektu ${project.name}`;
+      text = updatePreview(update);
+      url = PORTAL_ORIGIN;
+      tag = `portal-update-${project.id}`;
+    } else if (kind === "progress") {
+      if (!isAdmin) return json({ error: "Forbidden" }, 403);
+      const projectId = body.project_id;
+      if (typeof projectId !== "string") return json({ error: "project_id required" }, 400);
+
+      const { data: project } = await admin
+        .from("portal_projects")
+        .select("id, name, client_id, progress")
+        .eq("id", projectId)
+        .maybeSingle();
+      if (!project) return json({ error: "Project not found" }, 404);
+
+      const { data: client } = await admin
+        .from("portal_clients")
+        .select("auth_user_id")
+        .eq("id", project.client_id)
+        .maybeSingle();
+
+      recipientIds = client?.auth_user_id ? [client.auth_user_id] : [];
+      title = "Váš projekt se právě posunul";
+      text = `${project.name}: teď na ${project.progress} %`;
+      url = PORTAL_ORIGIN;
+      tag = `portal-progress-${project.id}`;
+    } else {
+      return json({ error: "Unknown kind" }, 400);
     }
 
-    // Never notify the sender's own devices.
+    // Never notify the actor's own devices.
     recipientIds = recipientIds.filter((id) => id !== callerId);
     if (recipientIds.length === 0) return json({ sent: 0, reason: "no recipients" });
 
@@ -132,12 +209,7 @@ Deno.serve(async (req) => {
     // --- send --------------------------------------------------------------
     webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
-    const notification = {
-      title,
-      body: preview(message.body, Boolean(message.attachment_url)),
-      url,
-      tag: `portal-${message.client_id}`,
-    };
+    const notification: PushPayload = { title, body: text, url, tag };
     const payload = JSON.stringify(notification);
 
     // Native rows can exist before Firebase is configured. Skipping them keeps

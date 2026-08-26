@@ -64,7 +64,29 @@ export async function getPushState(): Promise<PushState> {
 
   const registration = await navigator.serviceWorker.getRegistration("/");
   const subscription = await registration?.pushManager.getSubscription();
-  return subscription ? "on" : "off";
+  if (!subscription) return "off";
+
+  // A subscription existing in the browser is not the same as one that reaches
+  // *this* account, and the difference is not cosmetic: the row carries the
+  // user_id the notification is addressed to. Sign out, sign back in under a
+  // different code on the same device, and the browser still holds a perfectly
+  // valid subscription pointing at the previous account — the toggle would read
+  // "on" while nothing arrived, and message previews for the account that left
+  // would keep landing on this screen.
+  //
+  // RLS restricts select to the caller's own rows, so an empty result means the
+  // row was either pruned as stale by send-push or belongs to somebody else.
+  // Both are "off" for the person looking at the toggle, and switching it on
+  // re-registers the device to them. Native already worked this way; this is
+  // the web half. (The re-registration upsert needs the UPDATE policy from
+  // 20260826180000_portal_push_reassign_update.sql.)
+  const { data } = await db
+    .from("portal_push_subscriptions")
+    .select("id")
+    .eq("endpoint", subscription.endpoint)
+    .limit(1);
+
+  return data && data.length > 0 ? "on" : "off";
 }
 
 export async function enablePush(): Promise<PushState> {
@@ -124,11 +146,11 @@ export async function disablePush(): Promise<PushState> {
 }
 
 /**
- * Asks the backend to notify the other side about a message we just sent.
- * Best-effort: a failure here must never surface as "your message failed",
- * because the message itself is already saved.
+ * Asks the backend to push a notification about something that just happened.
+ * Best-effort: a failure here must never surface as "your action failed",
+ * because the underlying write (message, log entry, progress) is already saved.
  */
-export async function notifyNewMessage(messageId: string): Promise<void> {
+async function requestPush(body: Record<string, unknown>): Promise<void> {
   try {
     const { data } = await supabase.auth.getSession();
     const token = data.session?.access_token;
@@ -141,9 +163,24 @@ export async function notifyNewMessage(messageId: string): Promise<void> {
         apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ message_id: messageId }),
+      body: JSON.stringify(body),
     });
   } catch {
     // Swallowed on purpose — see the doc comment.
   }
+}
+
+/** Notifies the other side of the thread about a message we just sent. */
+export async function notifyNewMessage(messageId: string): Promise<void> {
+  await requestPush({ kind: "message", message_id: messageId });
+}
+
+/** Notifies the client that a new log entry was posted under their project. */
+export async function notifyProjectUpdate(updateId: string): Promise<void> {
+  await requestPush({ kind: "update", update_id: updateId });
+}
+
+/** Notifies the client that their project's progress just changed. */
+export async function notifyProjectProgress(projectId: string): Promise<void> {
+  await requestPush({ kind: "progress", project_id: projectId });
 }
