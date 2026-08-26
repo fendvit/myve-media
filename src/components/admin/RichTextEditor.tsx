@@ -46,10 +46,14 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
     content: value || "",
     editorProps: {
       attributes: {
+        // `prose` defaults its body/link colours to the light-mode gray scale, which is
+        // unreadable on our dark background — text-foreground (inherited by p and li) and
+        // prose-a/marker overrides pull it back onto the palette, as in ProjectDetail.
         class:
           "prose prose-sm max-w-none focus:outline-none min-h-[140px] px-3 py-2 " +
-          "prose-p:my-2 prose-headings:font-display prose-headings:text-foreground " +
-          "prose-strong:text-foreground prose-ul:my-2 prose-ol:my-2 prose-li:my-0",
+          "text-foreground prose-p:my-2 prose-headings:font-display prose-headings:text-foreground " +
+          "prose-strong:text-foreground prose-a:text-primary marker:text-muted-foreground " +
+          "prose-ul:my-2 prose-ol:my-2 prose-li:my-0",
       },
     },
     onUpdate: ({ editor }) => {
