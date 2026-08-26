@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import logoMyve from "@/assets/logo-myve.png";
 
-const navLinks: { label: string; href: string; type?: "route" }[] = [
+const allNavLinks: { label: string; href: string; type?: "route" }[] = [
   { label: "Projekty", href: "/projekty", type: "route" },
   { label: "Reference", href: "#references" },
   { label: "O nás", href: "#about" },
@@ -17,6 +19,24 @@ const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+
+  // The references section only renders once there are testimonials, so the
+  // anchor would scroll nowhere while the table is empty.
+  const { data: hasTestimonials } = useQuery({
+    queryKey: ["testimonials-exist"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("testimonials")
+        .select("id", { count: "exact", head: true })
+        .eq("visible", true);
+      if (error) throw error;
+      return (count ?? 0) > 0;
+    },
+  });
+
+  const navLinks = allNavLinks.filter(
+    (link) => link.href !== "#references" || hasTestimonials
+  );
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
