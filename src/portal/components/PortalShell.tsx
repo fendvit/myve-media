@@ -44,7 +44,7 @@ export default function PortalShell({
 
   return (
     <div className="h-[100dvh] flex bg-background text-foreground overflow-hidden">
-      <aside className="hidden lg:flex w-[268px] shrink-0 flex-col border-r border-border bg-card">
+      <aside className="hidden lg:flex w-[var(--portal-sidebar-w)] shrink-0 flex-col border-r border-border bg-card">
         <div className="px-5 py-6">
           <p className="display-type wordmark-myve text-3xl">{title}</p>
           {subtitle && (

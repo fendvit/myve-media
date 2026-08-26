@@ -306,6 +306,13 @@
    data-portal-theme on <html>.
    --------------------------------------------------------------------------- */
 
+:root {
+  /* PortalShell's desktop sidebar width. A variable rather than a literal
+     268px so anything that has to line up next to the sidebar (e.g.
+     ClientHome's fixed status bar) can't silently drift out of sync with it. */
+  --portal-sidebar-w: 268px;
+}
+
 /* Chrome-like feel for the installed app: no rubber-band scroll past the shell,
    no long-press callout, no double-tap zoom on the tab bar. */
 :root[data-portal-theme] body {

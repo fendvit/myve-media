@@ -28,6 +28,15 @@ function ProgressBar({ value }: { value: number }) {
   );
 }
 
+function OverviewRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-4 px-4 py-3">
+      <dt className="text-sm text-muted-foreground">{label}</dt>
+      <dd className="text-sm font-medium text-right">{value}</dd>
+    </div>
+  );
+}
+
 export default function ClientHome() {
   const { clientId } = usePortalSession();
   const { markUpdatesSeen } = usePortalUnread();
@@ -133,32 +142,49 @@ export default function ClientHome() {
   }
 
   const active = projects.find((project) => project.id === activeId) ?? projects[0];
+  // Reports are already sorted newest-first, so the first row is the most
+  // recent touch on the project; before any report exists, fall back to the
+  // project row's own updated_at (bumped whenever the admin edits it).
+  const lastTouchedAt = updates[0]?.created_at ?? active.updated_at;
+
+  const switcher =
+    projects.length > 1 ? (
+      <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+        {projects.map((project) => (
+          <button
+            key={project.id}
+            type="button"
+            onClick={() => setActiveId(project.id)}
+            className={[
+              "shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors border",
+              project.id === active.id
+                ? "bg-primary text-primary-foreground border-transparent"
+                : "bg-card text-muted-foreground border-border hover:text-foreground",
+            ].join(" ")}
+          >
+            {project.name}
+          </button>
+        ))}
+      </div>
+    ) : null;
 
   return (
-    <div className="space-y-5 portal-rise">
-      {projects.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-          {projects.map((project) => (
-            <button
-              key={project.id}
-              type="button"
-              onClick={() => setActiveId(project.id)}
-              className={[
-                "shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors border",
-                project.id === active.id
-                  ? "bg-primary text-primary-foreground border-transparent"
-                  : "bg-card text-muted-foreground border-border hover:text-foreground",
-              ].join(" ")}
-            >
-              {project.name}
-            </button>
-          ))}
-        </div>
-      )}
+    // A fragment, not a div: `.portal-rise` plays a transform animation, and
+    // in Chromium a forward-filled transform animation permanently turns its
+    // element into a containing block for `position: fixed` descendants even
+    // once the animation settles on `transform: none`. That would silently
+    // detach the status bar below from the viewport and re-anchor it to
+    // wherever this wrapper sits. Each visible section gets its own
+    // `.portal-rise` instead, so only content — never the fixed bar — sits
+    // inside an animated ancestor.
+    <>
+      {/* Phone/tablet: the layout from before — a single status card above a
+          compact timeline, both scrolling together. */}
+      <div className="lg:hidden space-y-5 portal-rise">
+        {switcher}
 
-      <div className="lg:grid lg:grid-cols-2 lg:gap-7 lg:items-start space-y-5 lg:space-y-0">
         <section
-          className="bg-card border border-border rounded-3xl p-6 lg:p-7"
+          className="bg-card border border-border rounded-3xl p-6"
           style={{ boxShadow: "var(--shadow-card)" }}
         >
           <span
@@ -167,7 +193,7 @@ export default function ClientHome() {
             {active.status}
           </span>
 
-          <h2 className="font-display text-2xl lg:text-3xl font-bold leading-tight tracking-tight mt-3">
+          <h2 className="font-display text-2xl font-bold leading-tight tracking-tight mt-3">
             {active.name}
           </h2>
 
@@ -232,6 +258,126 @@ export default function ClientHome() {
           )}
         </section>
       </div>
-    </div>
+
+      {/* Desktop: a project-report page — title, a quick-facts table, then
+          reports as dated entries — with live status pinned to the bottom of
+          the content column so it stays visible under a long report feed. */}
+      <div className="hidden lg:block lg:pb-28 portal-rise">
+        {switcher !== null && <div className="mb-6">{switcher}</div>}
+
+        <h1 className="font-display text-3xl font-bold tracking-tight">{active.name}</h1>
+        {active.description && (
+          <p className="text-muted-foreground leading-relaxed mt-2 max-w-2xl">
+            {active.description}
+          </p>
+        )}
+
+        <section className="mt-8">
+          <h2 className="font-display font-bold text-lg mb-3">Rychlý přehled</h2>
+          <dl className="rounded-2xl border border-border divide-y divide-border overflow-hidden bg-card">
+            <OverviewRow
+              label="Stav"
+              value={
+                <span
+                  className={`inline-block text-xs font-medium px-2.5 py-1 rounded-full border ${statusTone(active.status)}`}
+                >
+                  {active.status}
+                </span>
+              }
+            />
+            <OverviewRow label="Průběh" value={`${active.progress} %`} />
+            <OverviewRow label="Poslední aktualizace" value={formatDate(lastTouchedAt)} />
+            <OverviewRow label="Založeno" value={formatDate(active.created_at)} />
+            <OverviewRow
+              label="Realizuje"
+              value={
+                <a
+                  href="https://myve.media"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-primary hover:underline underline-offset-4"
+                >
+                  MYVE.media
+                </a>
+              }
+            />
+            {active.live_url && (
+              <OverviewRow
+                label="Odkaz na projekt"
+                value={
+                  <a
+                    href={active.live_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-primary hover:underline underline-offset-4"
+                  >
+                    Otevřít <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                }
+              />
+            )}
+          </dl>
+        </section>
+
+        <section className="mt-10">
+          <h2 className="font-display font-bold text-lg mb-4">Reporty</h2>
+
+          {updates.length === 0 ? (
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Zatím žádné novinky. Dáme vědět, jakmile se něco pohne.
+            </p>
+          ) : (
+            <div>
+              {updates.map((update) => (
+                <article key={update.id} className="py-6 border-b border-border last:border-0">
+                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-2.5">
+                    <p className="font-display font-bold text-base">
+                      {formatDate(update.created_at)}
+                    </p>
+                    {update.title && (
+                      <p className="text-muted-foreground">— {update.title}</p>
+                    )}
+                  </div>
+                  <UpdateBody body={update.body} isHtml={update.is_html} />
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* Fixed rather than sticky: it has to stay put regardless of where the
+          report feed above it scrolls to, spanning from the sidebar's edge
+          (--portal-sidebar-w, shared with PortalShell) to the window edge. */}
+      <div className="hidden lg:flex items-center gap-6 fixed bottom-0 right-0 left-[var(--portal-sidebar-w)] z-10 border-t border-border bg-card/95 backdrop-blur-md px-8 py-4">
+        <div className="min-w-0 shrink-0 max-w-xs">
+          <p className="font-display font-bold truncate">{active.name}</p>
+          <span
+            className={`inline-block mt-1 text-[11px] font-medium px-2 py-0.5 rounded-full border ${statusTone(active.status)}`}
+          >
+            {active.status}
+          </span>
+        </div>
+
+        <div className="flex-1 max-w-sm">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+            <span>Průběh</span>
+            <span className="font-medium text-foreground tabular-nums">{active.progress} %</span>
+          </div>
+          <ProgressBar value={active.progress} />
+        </div>
+
+        {active.live_url && (
+          <a
+            href={active.live_url}
+            target="_blank"
+            rel="noreferrer"
+            className="shrink-0 inline-flex items-center gap-1.5 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/15 transition-colors"
+          >
+            Otevřít projekt <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+        )}
+      </div>
+    </>
   );
 }
