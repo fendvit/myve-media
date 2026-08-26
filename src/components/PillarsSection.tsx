@@ -200,6 +200,9 @@ const PillarsSection = () => {
           <p className="text-primary font-display font-medium text-xs tracking-[0.3em] uppercase">
             Služby
           </p>
+          <h2 className="display-type text-foreground text-[clamp(1.8rem,4.5vw,3rem)]">
+            Stavíme to, co vám ušetří čas a vydělá peníze.
+          </h2>
           {PILLARS.map((pillar) => (
             <div key={pillar.index}>
               <span className="display-type text-primary text-5xl block">{pillar.index}</span>
@@ -257,7 +260,7 @@ const PillarsSection = () => {
             Služby
           </p>
           <h2 className="display-type text-foreground text-[clamp(2rem,3.8vw,3.4rem)] mt-3">
-            Co pro vás postavíme
+            Stavíme to, co vám ušetří čas a vydělá peníze.
           </h2>
         </motion.div>
 
