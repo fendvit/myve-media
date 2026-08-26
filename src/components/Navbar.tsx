@@ -4,10 +4,11 @@ import { useLocation, useNavigate } from "react-router-dom";
 import logoMyve from "@/assets/logo-myve.png";
 
 const navLinks: { label: string; href: string; type?: "route" }[] = [
+  { label: "Projekty", href: "/projekty", type: "route" },
+  { label: "Reference", href: "#references" },
   { label: "O nás", href: "#about" },
   { label: "Služby", href: "#services" },
   { label: "Jak to děláme", href: "/jak-to-delame", type: "route" },
-  { label: "Projekty", href: "/projekty", type: "route" },
   { label: "Kontakt", href: "#contact" },
 ];
 

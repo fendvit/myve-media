@@ -7,6 +7,7 @@ import StatsStrip from "@/components/StatsStrip";
 import PartnersMarquee from "@/components/PartnersMarquee";
 import PillarsSection from "@/components/PillarsSection";
 import WorkSection from "@/components/WorkSection";
+import TestimonialsSection from "@/components/TestimonialsSection";
 import FinaleSection from "@/components/FinaleSection";
 import Footer from "@/components/Footer";
 import Seo from "@/components/Seo";
@@ -35,10 +36,11 @@ const Index = () => {
       <Navbar />
       <main>
         <HeroOrbit />
-        <StatsStrip />
         <PartnersMarquee />
-        <PillarsSection />
         <WorkSection />
+        <TestimonialsSection />
+        <StatsStrip />
+        <PillarsSection />
         <FinaleSection />
       </main>
       <Footer />

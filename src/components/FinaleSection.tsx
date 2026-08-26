@@ -50,7 +50,8 @@ const FinaleSection = () => {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="text-muted-foreground text-lg leading-relaxed mt-8 mb-12 max-w-xl mx-auto"
         >
-          Máte nápad nebo projekt? Ozvěte se nám a probereme, jak vám můžeme pomoci.
+          Máte nápad nebo projekt? Probereme ho spolu — nezávazně a zdarma. Ozveme
+          se vám do 24 hodin.
         </motion.p>
 
         <motion.div
@@ -61,7 +62,7 @@ const FinaleSection = () => {
         >
           <ConsultationDialog>
             <GradientRimButton as="button" variant="filled">
-              <span>Spojte se s námi</span>
+              <span>Nezávazná konzultace</span>
               <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
             </GradientRimButton>
           </ConsultationDialog>
