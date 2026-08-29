@@ -19,6 +19,7 @@ komponenty i Supabase klienta — je to druhý Vite entry, ne druhá aplikace.
 | `supabase/migrations/20260826120000_portal_schema.sql` | Tabulky, RLS, storage |
 | `supabase/functions/redeem-code/` | Výměna kódu za session |
 | `supabase/functions/portal-mcp/` | MCP server pro Clauda |
+| `src/portal/pages/AdminMcp.tsx` | Správa MCP tokenů + návod na připojení |
 
 Marketingový web se nezměnil — jen `vite.config.ts` (druhý entry) a
 `vercel.json` (rewrite podle hostname).
@@ -67,7 +68,7 @@ auth uživatel (vy). Není co promazávat.
 | --- | --- |
 | `redeem-code` | ✅ nasazená (`verify_jwt = false`) |
 | `send-push` | ✅ nasazená |
-| `portal-mcp` | ⚠️ zbývá — viz [MCP](#mcp--ovládání-portálu-claudem) |
+| `portal-mcp` | ✅ nasazená (`PORTAL_MCP_TOKEN` nastaven) — viz [MCP](#mcp--ovládání-portálu-claudem) |
 
 `verify_jwt = false` u `redeem-code` je záměr — funkci volají lidé, kteří ještě
 žádnou session nemají, a autentizaci si řeší sama (kód + rate limit). Env
@@ -299,39 +300,58 @@ Klienta i projekt lze pojmenovat ID, kódem nebo jménem. Když jméno sedí na 
 záznamů, nástroj **skončí chybou a vypíše kandidáty** — netipuje, protože špatný
 tip zapisuje do portálu cizího klienta.
 
-### ⚠️ Než to nasadíte
+### ⚠️ Token je plný přístup
 
-`PORTAL_MCP_TOKEN` je jediný sdílený token a stojí zastupuje service role:
-**kdo ho má, má plný přístup ke všem datům všech klientů.** Nedávejte ho nikam,
-kam byste nedali service role key. Rotace = změnit secret a znovu nasadit.
+Token zastupuje service role: **kdo ho má, má plný přístup ke všem datům všech
+klientů.** Nedávejte ho nikam, kam byste nedali service role key.
 
-### Nastavení
+### Správa tokenů — `/admin/mcp`
 
-Vygenerujte token (klidně čímkoli, co dá dost náhody):
+Tokeny se vyrábějí a ruší v portálu, v záložce **Claude**. Obrazovka je zároveň
+návod: po vygenerování ukáže hotový `claude mcp add` i JSON do konfigurace.
+
+V databázi je jen **SHA-256 otisk**. Plaintext vznikne v prohlížeči a ukáže se
+jednou; server ho neumí zrekonstruovat, takže ani únik zálohy databáze přístup
+nevydá. `token_hint` je pár prvních znaků, aby šel řádek v seznamu poznat.
+
+Zneplatnění řádek nemaže — zůstává jako historie, kdo měl přístup a dokdy.
+`last_used_at` píše edge funkce při každém přijatém volání, takže je vidět
+zapomenutý token dřív, než ho zrušíte.
+
+Rotace = vyrobit nový, přepsat konfiguraci, starý zneplatnit.
+
+### Starý `PORTAL_MCP_TOKEN`
+
+Funkce ho pořád bere, aby se nerozbilo připojení, které vzniklo před touhle
+obrazovkou. Je to **fallback, ne cesta pro nové tokeny** — z UI ho zrušit nejde.
+Až budete jet na tokenu z portálu, secret smažte:
 
 ```powershell
-python -c "import secrets; print(secrets.token_urlsafe(32))"
+supabase secrets unset PORTAL_MCP_TOKEN --project-ref nkfefurnjhupzealopym
 ```
 
-Uložte ho do Supabase a nasaďte funkci:
+### Nasazení
 
 ```powershell
-supabase secrets set "PORTAL_MCP_TOKEN=sem-ten-token" --project-ref nkfefurnjhupzealopym
+supabase db push
 supabase functions deploy portal-mcp --project-ref nkfefurnjhupzealopym
+```
+
+Pozor: `db push` **nemá** přepínač `--project-ref` (na rozdíl od
+`functions deploy`) — jede na projekt z `supabase link`. S `--project-ref` skončí
+na `unknown flag`.
+
+Když migraci pustíte ručně (SQL editor v dashboardu), remote historie o ní neví
+a příští `db push` ji bude chtít pustit znovu. Dorovnat:
+
+```powershell
+supabase migration repair --status applied 20260829120000
 ```
 
 `verify_jwt = false` je už v `config.toml` — volá to desktopový asistent, který
 žádnou Supabase session nemá, a autentizaci si funkce řeší sama tím tokenem.
 
-### Připojení v Claude Code
-
-```powershell
-claude mcp add --transport http myve-portal `
-  https://nkfefurnjhupzealopym.supabase.co/functions/v1/portal-mcp `
-  --header "Authorization: Bearer sem-ten-token"
-```
-
-Ověření, že server odpovídá:
+### Ověření, že server odpovídá
 
 ```powershell
 curl -X POST https://nkfefurnjhupzealopym.supabase.co/functions/v1/portal-mcp `

@@ -104,6 +104,23 @@ export type PortalPushSubscription = {
   created_at: string;
 };
 
+/**
+ * A bearer token the MCP server accepts. Only the SHA-256 hash is stored, so
+ * the plaintext exists exactly once: in the browser that generated it.
+ */
+export type PortalMcpToken = {
+  id: string;
+  label: string;
+  token_hash: string;
+  /** Leading characters of the plaintext, so a row is recognisable in a list. */
+  token_hint: string;
+  created_at: string;
+  created_by: string | null;
+  last_used_at: string | null;
+  /** Non-null means the MCP server no longer accepts it. */
+  revoked_at: string | null;
+};
+
 type Table<Row, Insert = Partial<Row>, Update = Partial<Row>> = {
   Row: Row;
   Insert: Insert;
@@ -149,6 +166,12 @@ export type PortalDatabase = {
         PortalWelcomeDismissal,
         { user_id: string; project_id: string } & Partial<
           Omit<PortalWelcomeDismissal, "user_id" | "project_id">
+        >
+      >;
+      portal_mcp_tokens: Table<
+        PortalMcpToken,
+        { label: string; token_hash: string; token_hint: string } & Partial<
+          Omit<PortalMcpToken, "label" | "token_hash" | "token_hint">
         >
       >;
       portal_push_subscriptions: Table<

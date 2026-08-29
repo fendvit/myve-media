@@ -6,10 +6,12 @@
 // enough for a tool-only server and avoids keeping state in an edge function
 // that can be recycled between calls.
 //
-// Auth is a single shared bearer token (PORTAL_MCP_TOKEN), not a user JWT: the
-// caller is a desktop assistant, not a logged-in browser. The token therefore
-// carries full admin power over portal data — treat it like the service role
-// key it stands in for. Rotate it by changing the secret and re-deploying.
+// Auth is a bearer token, not a user JWT: the caller is a desktop assistant, not
+// a logged-in browser. Tokens are minted and revoked from the admin UI and
+// matched here by SHA-256; the older PORTAL_MCP_TOKEN secret is still accepted
+// so connections predating that screen keep working. Either way the token
+// carries full admin power over portal data — treat it like the service role key
+// it stands in for.
 
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.48.1";
 import { markdownToHtml } from "./markdown.ts";
@@ -43,9 +45,16 @@ function json(body: unknown, status = 200) {
   });
 }
 
+async function sha256Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 /** Compares digests rather than raw bytes so neither length nor content leaks
  *  through response timing. */
-async function tokenMatches(presented: string): Promise<boolean> {
+async function envTokenMatches(presented: string): Promise<boolean> {
   if (!MCP_TOKEN || !presented) return false;
   const encoder = new TextEncoder();
   const [a, b] = await Promise.all([
@@ -57,6 +66,44 @@ async function tokenMatches(presented: string): Promise<boolean> {
   let diff = 0;
   for (let i = 0; i < left.length; i++) diff |= left[i] ^ right[i];
   return diff === 0;
+}
+
+/**
+ * Accepts either a token minted in the admin UI or the original
+ * PORTAL_MCP_TOKEN secret.
+ *
+ * Table tokens are matched by hash, so no timing-safe compare is needed here:
+ * the lookup key is a SHA-256 digest, and learning how long a failed index
+ * probe took tells an attacker nothing about the 256-bit token behind it.
+ */
+async function authorize(db: SupabaseClient, presented: string): Promise<boolean> {
+  if (!presented) return false;
+
+  const { data, error } = await db
+    .from("portal_mcp_tokens")
+    .select("id")
+    .eq("token_hash", await sha256Hex(presented))
+    .is("revoked_at", null)
+    .maybeSingle();
+
+  // A failed lookup falls through to the env token, which keeps the server up if
+  // the table is missing or unreachable — but silently, and a permanently
+  // unusable token screen is exactly the kind of thing nobody notices. Say so.
+  if (error) {
+    console.error("portal_mcp_tokens lookup failed, falling back to env token:", error.message);
+  }
+
+  if (data) {
+    // Awaited rather than fired and forgotten: an edge function can be recycled
+    // the moment it returns a response, which would drop a pending write.
+    await db
+      .from("portal_mcp_tokens")
+      .update({ last_used_at: new Date().toISOString() })
+      .eq("id", (data as { id: string }).id);
+    return true;
+  }
+
+  return await envTokenMatches(presented);
 }
 
 class ToolError extends Error {}
@@ -688,12 +735,13 @@ Deno.serve(async (req) => {
     return json({ error: "Method not allowed" }, 405);
   }
 
-  if (!MCP_TOKEN) {
-    return json({ error: "Server misconfigured: PORTAL_MCP_TOKEN is not set." }, 500);
-  }
+  // Built before the auth check, because that check now reads the token table.
+  const db = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
 
   const presented = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
-  if (!(await tokenMatches(presented))) {
+  if (!(await authorize(db, presented))) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: {
@@ -710,10 +758,6 @@ Deno.serve(async (req) => {
   } catch {
     return json(rpcError(null, -32700, "Parse error"), 400);
   }
-
-  const db = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
 
   if (Array.isArray(payload)) {
     const responses = (await Promise.all(payload.map((entry) => handleRpc(db, entry)))).filter(

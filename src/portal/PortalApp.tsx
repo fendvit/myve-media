@@ -9,12 +9,13 @@ import {
   useNavigate,
 } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
-import { Home, Loader2, MessageCircle, Phone, Users } from "lucide-react";
+import { Home, Loader2, MessageCircle, Phone, Sparkles, Users } from "lucide-react";
 import CodeGate from "./components/CodeGate";
 import Chat from "./components/Chat";
 import PortalShell, { type NavItem } from "./components/PortalShell";
 import AdminClient from "./pages/AdminClient";
 import AdminHome from "./pages/AdminHome";
+import AdminMcp from "./pages/AdminMcp";
 import ClientContact from "./pages/ClientContact";
 import ClientHome from "./pages/ClientHome";
 import { db } from "./lib/db";
@@ -30,10 +31,9 @@ const CLIENT_NAV: Omit<NavItem, "badge">[] = [
   { to: "/kontakt", label: "Kontakt", icon: Phone },
 ];
 
-// A single entry, but it keeps the desktop sidebar from being an empty column
-// and gives the client detail screen a way back that isn't the browser button.
 const ADMIN_NAV: Omit<NavItem, "badge">[] = [
   { to: "/admin", label: "Klienti", icon: Users, end: true },
+  { to: "/admin/mcp", label: "Claude", icon: Sparkles },
 ];
 
 function FullScreenLoader() {
@@ -163,10 +163,15 @@ function AdminLayout() {
   const { pathname } = useLocation();
   const { totalMessages } = usePortalUnread();
   // The client detail screen hosts the chat, which manages its own scrolling.
-  const isDetail = /^\/admin\/[^/]+$/.test(pathname);
+  // /admin/mcp sits at the same depth but is an ordinary scrolling page.
+  const isDetail = /^\/admin\/[^/]+$/.test(pathname) && pathname !== "/admin/mcp";
 
-  // One badge for the whole roster — which client it is shows in the list.
-  const nav: NavItem[] = ADMIN_NAV.map((item) => ({ ...item, badge: totalMessages }));
+  // One badge for the whole roster — which client it is shows in the list. It
+  // belongs to the client tab only; unread chat says nothing about MCP tokens.
+  const nav: NavItem[] = ADMIN_NAV.map((item) => ({
+    ...item,
+    badge: item.to === "/admin" ? totalMessages : 0,
+  }));
 
   return (
     <PortalShell title="MYVE" subtitle="Správa portálu" nav={nav} fullBleed={isDetail}>
@@ -180,6 +185,9 @@ function AdminRoutes() {
     <Routes>
       <Route element={<AdminLayout />}>
         <Route path="/admin" element={<AdminHome />} />
+        {/* Ahead of :clientId for readability; react-router ranks the static
+            segment higher regardless of order, so "mcp" is never read as an id. */}
+        <Route path="/admin/mcp" element={<AdminMcp />} />
         <Route path="/admin/:clientId" element={<AdminClient />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Route>
