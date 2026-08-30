@@ -229,6 +229,196 @@ function requireString(args: Record<string, unknown>, key: string): string {
   return value.trim();
 }
 
+// --- website content --------------------------------------------------------
+//
+// The public site's portfolio, partner logos and testimonials live in their own
+// tables and have nothing to do with the portal tables above. They are called
+// "references" here because `create_project` already means a portal project —
+// the same word means two different things either side of the login, and a
+// model that confuses them publishes a client's private work to the front page.
+
+const IMAGE_BUCKET = "project-images";
+const IMAGE_PREFIX = `${SUPABASE_URL}/storage/v1/object/public/${IMAGE_BUCKET}/`;
+
+const CATEGORIES = ["web", "app"];
+
+const IMAGE_EXTENSIONS: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/gif": "gif",
+  "image/svg+xml": "svg",
+  "image/avif": "avif",
+};
+
+interface ReferenceRow {
+  id: string;
+  title: string;
+  slug: string | null;
+  category: string;
+  sort_order: number | null;
+  [key: string]: unknown;
+}
+
+/** Same transliteration the admin form uses, so a slug generated here and one
+ *  generated in the browser agree for the same Czech title. */
+function slugify(title: string): string {
+  return title
+    .toLowerCase()
+    .normalize("NFD")
+    // Strips the combining marks NFD just split off, so "Dvůr Králové" slugs as
+    // "dvur-kralove" rather than losing the accented letters entirely below.
+    .replace(/\p{Mn}/gu, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+async function resolveReference(db: SupabaseClient, reference: string): Promise<ReferenceRow> {
+  const value = reference.trim();
+  if (!value) throw new ToolError("Reference is empty.");
+
+  if (UUID.test(value)) {
+    const { data } = await db.from("projects").select("*").eq("id", value).maybeSingle();
+    if (!data) throw new ToolError(`No reference with id ${value}.`);
+    return data as ReferenceRow;
+  }
+
+  const { data: bySlug } = await db.from("projects").select("*").eq("slug", value).maybeSingle();
+  if (bySlug) return bySlug as ReferenceRow;
+
+  const { data: matches } = await db
+    .from("projects")
+    .select("*")
+    .ilike("title", `%${value}%`)
+    .limit(10);
+
+  const rows = (matches ?? []) as ReferenceRow[];
+  if (rows.length === 0) throw new ToolError(`No reference matches "${value}".`);
+  if (rows.length > 1) {
+    const exact = rows.filter((row) => row.title.toLowerCase() === value.toLowerCase());
+    if (exact.length === 1) return exact[0];
+    throw new ToolError(
+      `"${value}" matches ${rows.length} references: ${rows
+        .map((row) => `${row.title} (${row.slug ?? row.id})`)
+        .join(", ")}. Use the slug.`,
+    );
+  }
+  return rows[0];
+}
+
+/**
+ * Copies an image into our own bucket, so a published reference never depends on
+ * a URL somebody else can delete. Anything already in the bucket — including a
+ * public_url handed back by prepare_image_upload — passes straight through.
+ */
+async function storeImage(db: SupabaseClient, source: string): Promise<string> {
+  const url = source.trim();
+  if (!url) throw new ToolError("Image URL is empty.");
+  if (url.startsWith(IMAGE_PREFIX)) return url;
+
+  if (!/^https:\/\//i.test(url)) {
+    throw new ToolError(
+      `"${url}" is not an https URL. For a file on disk, call prepare_image_upload first and pass the public_url it returns.`,
+    );
+  }
+
+  const response = await fetch(url);
+  if (!response.ok) throw new ToolError(`Could not fetch ${url}: HTTP ${response.status}.`);
+
+  const contentType = (response.headers.get("content-type") ?? "").split(";")[0].trim();
+  if (!contentType.startsWith("image/")) {
+    throw new ToolError(`${url} returned ${contentType || "no content type"}, not an image.`);
+  }
+
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  const name = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${
+    IMAGE_EXTENSIONS[contentType] ?? "png"
+  }`;
+
+  const { error } = await db.storage.from(IMAGE_BUCKET).upload(name, bytes, { contentType });
+  if (error) throw new ToolError(`Could not store ${url}: ${error.message}`);
+  return `${IMAGE_PREFIX}${name}`;
+}
+
+/** Accepts a real array or the separated string the admin form uses — both are
+ *  natural things for a model to send, and neither is worth an error. */
+function toList(value: unknown, separator: RegExp): string[] | null {
+  if (Array.isArray(value)) {
+    return value.map((entry) => String(entry).trim()).filter(Boolean);
+  }
+  if (typeof value === "string") {
+    return value.split(separator).map((entry) => entry.trim()).filter(Boolean);
+  }
+  return null;
+}
+
+function toSteps(value: unknown): { title: string; description: string }[] | null {
+  if (!Array.isArray(value)) return null;
+  return value
+    .map((entry, index) => {
+      if (typeof entry !== "object" || entry === null) {
+        throw new ToolError(`steps[${index}] must be an object with title and description.`);
+      }
+      const step = entry as Record<string, unknown>;
+      return {
+        title: typeof step.title === "string" ? step.title.trim() : "",
+        description: typeof step.description === "string" ? step.description.trim() : "",
+      };
+    })
+    .filter((step) => step.title || step.description);
+}
+
+/** The fields create_reference and update_reference share. Only keys actually
+ *  present in `args` end up in the patch, so an update touches nothing else. */
+async function referenceFields(
+  db: SupabaseClient,
+  args: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  const patch: Record<string, unknown> = {};
+
+  if (typeof args.title === "string" && args.title.trim()) patch.title = args.title.trim();
+  if (typeof args.slug === "string" && args.slug.trim()) patch.slug = slugify(args.slug);
+  if (typeof args.description === "string") patch.description = args.description.trim() || null;
+  if (typeof args.external_url === "string") patch.external_url = args.external_url.trim() || null;
+  if (typeof args.visible === "boolean") patch.visible = args.visible;
+
+  if (typeof args.category === "string" && args.category.trim()) {
+    const category = args.category.trim().toLowerCase();
+    if (!CATEGORIES.includes(category)) {
+      throw new ToolError(`\`category\` must be one of: ${CATEGORIES.join(", ")}.`);
+    }
+    patch.category = category;
+  }
+
+  if (typeof args.detailed_description === "string") {
+    patch.detailed_description = markdownToHtml(args.detailed_description) || null;
+  }
+
+  const tags = toList(args.tags, /[,\n]/);
+  if (tags) patch.tags = tags;
+
+  const results = toList(args.results, /\n/);
+  if (results) patch.result_text = results.join("\n") || null;
+
+  const steps = toSteps(args.steps);
+  if (steps) patch.steps = steps;
+
+  if (typeof args.image === "string") {
+    patch.image_url = args.image.trim() ? await storeImage(db, args.image) : null;
+  }
+
+  const screenshots = toList(args.screenshots, /\n/);
+  if (screenshots) {
+    // Sequential rather than Promise.all: a reference with a dozen screenshots
+    // would otherwise open a dozen sockets at once inside one edge invocation.
+    const stored: string[] = [];
+    for (const url of screenshots) stored.push(await storeImage(db, url));
+    patch.screenshots = stored;
+  }
+
+  return patch;
+}
+
 // --- tools ------------------------------------------------------------------
 
 const TOOLS = [
@@ -376,6 +566,202 @@ const TOOLS = [
         },
       },
       required: ["client"],
+    },
+  },
+
+  // Public site. Everything below is world-readable the moment it is written —
+  // unlike the portal tools above, which only the one client ever sees.
+  {
+    name: "list_references",
+    description:
+      "List the portfolio entries on the public site (myve.media/projekty) with their slugs, categories and order. The first four in sort order are the ones shown on the homepage. Not to be confused with portal projects — these are public.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        full: {
+          type: "boolean",
+          description:
+            "Include long fields (detailed description, screenshots, steps). Defaults to false, which keeps the list short.",
+        },
+      },
+    },
+  },
+  {
+    name: "get_reference",
+    description: "Full detail for one public portfolio entry, including its detailed description, screenshots and steps.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        reference: { type: "string", description: "Reference id, slug, or title." },
+      },
+      required: ["reference"],
+    },
+  },
+  {
+    name: "create_reference",
+    description:
+      "Publish a portfolio entry to the public site. Only `title` is required; everything else can be filled in later with update_reference. New entries go to the end of the order, so they do NOT appear on the homepage until reordered in the admin UI.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        title: { type: "string", description: "Project name, e.g. \"Penzion U Lípy\"." },
+        slug: {
+          type: "string",
+          description:
+            "URL segment under /projekty/. Derived from the title when omitted; accents are stripped.",
+        },
+        description: { type: "string", description: "One or two sentences, shown on the card in the listing." },
+        detailed_description: {
+          type: "string",
+          description:
+            "The long \"O projektu\" section on the entry's own page. Markdown — headings, bullets, bold, links — converted to HTML.",
+        },
+        tags: {
+          type: "array",
+          items: { type: "string" },
+          description: "e.g. [\"Webdesign\", \"Rezervační systém\"]. A comma-separated string is also accepted.",
+        },
+        results: {
+          type: "array",
+          items: { type: "string" },
+          description:
+            "Headline outcomes, each rendered on its own line with an arrow, e.g. [\"+120 % návštěvnosti\", \"+50 % konverzí\"].",
+        },
+        external_url: { type: "string", description: "Link to the live site or app." },
+        category: { type: "string", description: "web or app. Defaults to web." },
+        image: {
+          type: "string",
+          description:
+            "Main image: an https URL, which is downloaded and re-hosted in our own storage. For a file on disk, call prepare_image_upload first.",
+        },
+        screenshots: {
+          type: "array",
+          items: { type: "string" },
+          description: "Gallery images, same rules as `image`.",
+        },
+        steps: {
+          type: "array",
+          description: "The \"Jak jsme postupovali\" list, in order.",
+          items: {
+            type: "object",
+            properties: {
+              title: { type: "string" },
+              description: { type: "string" },
+            },
+          },
+        },
+        visible: { type: "boolean", description: "Defaults to visible." },
+      },
+      required: ["title"],
+    },
+  },
+  {
+    name: "update_reference",
+    description:
+      "Change a public portfolio entry. Only the fields you pass are touched. Passing `tags`, `results`, `screenshots` or `steps` replaces that list wholesale rather than appending — read it with get_reference first if you mean to add one item.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        reference: { type: "string", description: "Reference id, slug, or title." },
+        title: { type: "string" },
+        slug: { type: "string", description: "Changing this breaks any existing link to the entry." },
+        description: { type: "string" },
+        detailed_description: { type: "string", description: "Markdown. Empty string clears it." },
+        tags: { type: "array", items: { type: "string" } },
+        results: { type: "array", items: { type: "string" } },
+        external_url: { type: "string", description: "Empty string clears it." },
+        category: { type: "string", description: "web or app." },
+        image: { type: "string", description: "Empty string clears it." },
+        screenshots: { type: "array", items: { type: "string" } },
+        steps: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              title: { type: "string" },
+              description: { type: "string" },
+            },
+          },
+        },
+        visible: { type: "boolean", description: "false hides it from the site without deleting it." },
+      },
+      required: ["reference"],
+    },
+  },
+  {
+    name: "reorder_references",
+    description:
+      "Set the order of the public portfolio, which is what decides the homepage: the first four entries in the order are the ones shown there. Entries you name move to the front in the order given; anything you leave out keeps its current relative order behind them, so promoting a single entry needs only that one name.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        order: {
+          type: "array",
+          items: { type: "string" },
+          description: "Reference ids, slugs or titles, most prominent first.",
+        },
+      },
+      required: ["order"],
+    },
+  },
+  {
+    name: "list_partners",
+    description: "List the partner logos in the marquee on the public site.",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "create_partner",
+    description: "Add a partner logo to the marquee on the public site.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        name: { type: "string", description: "Partner or company name, used as the logo's alt text." },
+        logo: {
+          type: "string",
+          description:
+            "An https URL, downloaded and re-hosted in our own storage. For a file on disk, call prepare_image_upload first.",
+        },
+        reference: {
+          type: "string",
+          description: "Optional portfolio entry to link the logo to — id, slug, or title.",
+        },
+        visible: { type: "boolean", description: "Defaults to visible." },
+      },
+      required: ["name", "logo"],
+    },
+  },
+  {
+    name: "list_testimonials",
+    description: "List the client testimonials on the public site.",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "create_testimonial",
+    description:
+      "Add a client testimonial to the public site. Quote real words only — never invent or embellish a client's words.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        content: { type: "string", description: "The quote itself, as the client wrote or said it." },
+        author_name: { type: "string" },
+        author_role: { type: "string", description: "e.g. \"majitel, Penzion U Lípy\"." },
+        visible: { type: "boolean", description: "Defaults to visible." },
+      },
+      required: ["content", "author_name"],
+    },
+  },
+  {
+    name: "prepare_image_upload",
+    description:
+      "Get a one-time signed URL for putting an image straight into our storage, for pictures that exist only on the caller's disk. Upload the bytes with `curl -X PUT \"<upload_url>\" -H \"Content-Type: <mime>\" --data-binary @<file>`, then pass the returned `public_url` to create_reference or create_partner. Images already reachable over https need none of this — pass the URL directly.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        filename: {
+          type: "string",
+          description: "Original file name; only its extension is kept. Defaults to .png.",
+        },
+      },
     },
   },
 ] as const;
@@ -657,6 +1043,235 @@ const HANDLERS: Record<string, ToolHandler> = {
         awaiting_our_reply: last?.sender_role === "client",
         last_message_at: last?.created_at ?? null,
       },
+    };
+  },
+
+  // --- public site ----------------------------------------------------------
+
+  async list_references(db, args) {
+    const columns = args.full === true
+      ? "*"
+      : "id, title, slug, category, description, tags, image_url, external_url, visible, sort_order";
+
+    const { data, error } = await db
+      .from("projects")
+      .select(columns)
+      .order("sort_order", { ascending: true });
+
+    if (error) throw new ToolError(error.message);
+    const rows = (data ?? []) as ReferenceRow[];
+    return {
+      references: rows,
+      note: rows.length > 4
+        ? `The first four (${rows.slice(0, 4).map((row) => row.title).join(", ")}) are the ones on the homepage.`
+        : "All of these appear on the homepage.",
+    };
+  },
+
+  async get_reference(db, args) {
+    const reference = await resolveReference(db, requireString(args, "reference"));
+    return { reference, url: `https://myve.media/projekty/${reference.slug ?? ""}` };
+  },
+
+  async create_reference(db, args) {
+    const title = requireString(args, "title");
+    const insert = await referenceFields(db, args);
+    insert.title = title;
+    if (!insert.slug) insert.slug = slugify(title);
+
+    if (!insert.slug) {
+      throw new ToolError(
+        `"${title}" has no letters or digits to build a slug from — pass \`slug\` explicitly.`,
+      );
+    }
+
+    // The slug is the URL, so a collision would silently shadow an existing
+    // entry rather than fail loudly at insert time.
+    const { data: clash } = await db
+      .from("projects")
+      .select("id, title")
+      .eq("slug", insert.slug)
+      .maybeSingle();
+    if (clash) {
+      throw new ToolError(
+        `Slug "${insert.slug}" is already used by "${(clash as { title: string }).title}". Pass a different \`slug\`.`,
+      );
+    }
+
+    const { count } = await db.from("projects").select("id", { count: "exact", head: true });
+    insert.sort_order = count ?? 0;
+
+    const { data, error } = await db.from("projects").insert(insert).select().single();
+    if (error) throw new ToolError(error.message);
+
+    return {
+      reference: data,
+      url: `https://myve.media/projekty/${insert.slug}`,
+      note:
+        "Live on the site now, at the end of the listing. Drag it into the first four in /admin if it should be on the homepage.",
+    };
+  },
+
+  async update_reference(db, args) {
+    const reference = await resolveReference(db, requireString(args, "reference"));
+    const patch = await referenceFields(db, args);
+
+    if (Object.keys(patch).length === 0) {
+      throw new ToolError("Nothing to change — pass at least one field to update.");
+    }
+
+    if (typeof patch.slug === "string" && patch.slug !== reference.slug) {
+      const { data: clash } = await db
+        .from("projects")
+        .select("id, title")
+        .eq("slug", patch.slug)
+        .neq("id", reference.id)
+        .maybeSingle();
+      if (clash) {
+        throw new ToolError(
+          `Slug "${patch.slug}" is already used by "${(clash as { title: string }).title}".`,
+        );
+      }
+    }
+
+    const { data, error } = await db
+      .from("projects")
+      .update(patch)
+      .eq("id", reference.id)
+      .select()
+      .single();
+
+    if (error) throw new ToolError(error.message);
+    return { reference: data, changed: Object.keys(patch) };
+  },
+
+  async reorder_references(db, args) {
+    const requested = toList(args.order, /\n/);
+    if (!requested || requested.length === 0) {
+      throw new ToolError("`order` must name at least one reference.");
+    }
+
+    const { data, error } = await db
+      .from("projects")
+      .select("id, title, slug")
+      .order("sort_order", { ascending: true });
+    if (error) throw new ToolError(error.message);
+    const current = (data ?? []) as ReferenceRow[];
+
+    const front: ReferenceRow[] = [];
+    const named = new Set<string>();
+    for (const entry of requested) {
+      const row = await resolveReference(db, entry);
+      if (named.has(row.id)) {
+        throw new ToolError(`"${entry}" names "${row.title}", which the order already lists.`);
+      }
+      named.add(row.id);
+      front.push(row);
+    }
+
+    // Unnamed entries keep their relative order behind the named ones, which is
+    // what makes "put this one on the homepage" a one-name call.
+    const ordered = [...front, ...current.filter((row) => !named.has(row.id))];
+
+    const results = await Promise.all(
+      ordered.map((row, index) =>
+        db.from("projects").update({ sort_order: index }).eq("id", row.id),
+      ),
+    );
+
+    // Promise.all doesn't stop the others once one rejects, so a failure here
+    // leaves the order partly written rather than untouched. Say so plainly.
+    const failure = results.find((result) => result.error);
+    if (failure?.error) {
+      throw new ToolError(
+        `The order is now half-applied — rerun this call or fix it in /admin. Cause: ${failure.error.message}`,
+      );
+    }
+
+    return {
+      order: ordered.map((row, index) => ({
+        position: index,
+        title: row.title,
+        slug: row.slug,
+      })),
+      homepage: ordered.slice(0, 4).map((row) => row.title),
+    };
+  },
+
+  async list_partners(db) {
+    const { data, error } = await db
+      .from("partner_logos")
+      .select("id, name, logo_url, project_id, visible, sort_order")
+      .order("sort_order", { ascending: true });
+
+    if (error) throw new ToolError(error.message);
+    return { partners: data ?? [] };
+  },
+
+  async create_partner(db, args) {
+    const insert: Record<string, unknown> = {
+      name: requireString(args, "name"),
+      logo_url: await storeImage(db, requireString(args, "logo")),
+    };
+
+    if (typeof args.reference === "string" && args.reference.trim()) {
+      insert.project_id = (await resolveReference(db, args.reference)).id;
+    }
+    if (typeof args.visible === "boolean") insert.visible = args.visible;
+
+    const { count } = await db.from("partner_logos").select("id", { count: "exact", head: true });
+    insert.sort_order = (count ?? 0) + 1;
+
+    const { data, error } = await db.from("partner_logos").insert(insert).select().single();
+    if (error) throw new ToolError(error.message);
+    return { partner: data, note: "Visible in the marquee on the site now." };
+  },
+
+  async list_testimonials(db) {
+    const { data, error } = await db
+      .from("testimonials")
+      .select("id, content, author_name, author_role, visible, sort_order")
+      .order("sort_order", { ascending: true });
+
+    if (error) throw new ToolError(error.message);
+    return { testimonials: data ?? [] };
+  },
+
+  async create_testimonial(db, args) {
+    const insert: Record<string, unknown> = {
+      content: requireString(args, "content"),
+      author_name: requireString(args, "author_name"),
+    };
+    if (typeof args.author_role === "string") {
+      insert.author_role = args.author_role.trim() || null;
+    }
+    if (typeof args.visible === "boolean") insert.visible = args.visible;
+
+    const { count } = await db.from("testimonials").select("id", { count: "exact", head: true });
+    insert.sort_order = (count ?? 0) + 1;
+
+    const { data, error } = await db.from("testimonials").insert(insert).select().single();
+    if (error) throw new ToolError(error.message);
+    return { testimonial: data, note: "Published to the site now." };
+  },
+
+  async prepare_image_upload(db, args) {
+    const name = typeof args.filename === "string" ? args.filename.trim() : "";
+    const extension = (name.split(".").pop() ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    const path = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${extension || "png"}`;
+
+    const { data, error } = await db.storage.from(IMAGE_BUCKET).createSignedUploadUrl(path);
+    if (error) throw new ToolError(error.message);
+
+    const { token } = data as { token: string };
+    return {
+      // Built by hand rather than taken from `data.signedUrl`, which is relative
+      // in some client versions and absolute in others.
+      upload_url:
+        `${SUPABASE_URL}/storage/v1/object/upload/sign/${IMAGE_BUCKET}/${path}?token=${token}`,
+      public_url: `${IMAGE_PREFIX}${path}`,
+      note:
+        "Single use, expires in two hours. PUT the bytes with a Content-Type header, then pass public_url to create_reference or create_partner.",
     };
   },
 };
