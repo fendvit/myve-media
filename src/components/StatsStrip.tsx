@@ -6,7 +6,7 @@ const stats = [
   { target: 7, suffix: "+", label: "projektů spuštěných pro české firmy" },
   { target: 14, suffix: " dní", label: "a váš web je venku — od zadání ke spuštění" },
   { target: 40, suffix: "+", label: "hodin měsíčně, které klienti nemusí řešit ručně" },
-  { target: 24, suffix: " h", label: "maximální čekání na naši odpověď" },
+  { target: 1, suffix: "", label: "pracovní den — déle na naši odpověď nečekáte" },
 ];
 
 const StatsStrip = () => {

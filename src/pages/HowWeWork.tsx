@@ -29,7 +29,7 @@ const STEPS = [
     number: "03",
     title: "Stavíme na míru, ne na krabici",
     body:
-      "Teď se staví. Píšeme vlastní kód, napojujeme databáze a integrace a průběžně testujeme na mobilech, tabletech i desktopech. Nestavíme na šabloně, která vás za rok zastaví — řešení jde kdykoliv rozšířit o další funkce. Po celou dobu víte, v jaké fázi jsme, a na zprávu odpovídáme do 24 hodin.",
+      "Teď se staví. Píšeme vlastní kód, napojujeme databáze a integrace a průběžně testujeme na mobilech, tabletech i desktopech. Nestavíme na šabloně, která vás za rok zastaví — řešení jde kdykoliv rozšířit o další funkce. Po celou dobu víte, v jaké fázi jsme, a na zprávu odpovídáme do jednoho pracovního dne.",
     badge: { icon: ShieldCheck, title: "Rychlé, bezpečné a rozšiřitelné.", subtitle: "Vlastní kód, na kterém se dá stavět dál — ne šablona." },
   },
   {
@@ -411,7 +411,7 @@ const HowWeWork = () => {
             U vývoje se firmy nejčastěji bojí tří věcí: že se to potáhne měsíce, že cena poletí
             jinam, než zněla nabídka, a že nakonec dostanou něco jiného, než čekaly. Proto má náš
             proces čtyři kroky s jasným výstupem — víte, co se právě děje, co dostanete a kdy.
-            Běžný web spouštíme v průměru za 14 dní a na každou zprávu odpovídáme do 24 hodin.
+            Běžný web spouštíme v průměru za 14 dní a na každou zprávu odpovídáme do jednoho pracovního dne.
           </motion.p>
 
           <motion.div
@@ -458,17 +458,20 @@ const HowWeWork = () => {
       <section className="py-20 lg:py-28">
         <div className="container mx-auto px-6 max-w-3xl text-center">
           <h2 className="font-display text-3xl md:text-4xl font-bold mb-4">
-            První krok je jednodušší, než čekáte
+            Do jednoho pracovního dne víte, na čem jste
           </h2>
-          <p className="text-muted-foreground text-lg mb-8 leading-relaxed">
-            Napište nám pár vět o projektu. Do 24 hodin se ozveme a řekneme vám na rovinu, co by to
-            obnášelo, jak dlouho by to trvalo a kolik by to stálo — i kdyby závěr měl být, že to
-            zatím nepotřebujete. Konzultace je zdarma a nezávazná.
+          <p className="text-muted-foreground text-lg mb-4 leading-relaxed">
+            Nemusíte nic připravovat. Nechte nám kontakt, ozveme se do jednoho pracovního dne a
+            řekneme vám na rovinu, co by to obnášelo, jak dlouho by to trvalo a kolik by to stálo.
+            I kdyby závěr měl být, že to zatím nepotřebujete. Zdarma a nezávazně.
+          </p>
+          <p className="text-sm text-muted-foreground mb-8">
+            Když to nedává smysl, řekneme vám to na rovinu. I to je zdarma.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <ConsultationDialog>
+            <ConsultationDialog source="how-we-work">
               <GradientRimButton as="button" variant="filled">
-                <span>Domluvit konzultaci</span>
+                <span>Zjistit, co by to stálo</span>
                 <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
               </GradientRimButton>
             </ConsultationDialog>

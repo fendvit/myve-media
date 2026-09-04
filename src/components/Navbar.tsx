@@ -4,6 +4,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import logoMyve from "@/assets/logo-myve.png";
+import ConsultationDialog from "@/components/ConsultationDialog";
+import GradientRimButton from "@/components/ui/GradientRimButton";
 
 const allNavLinks: { label: string; href: string; type?: "route" }[] = [
   { label: "Projekty", href: "/projekty", type: "route" },
@@ -11,8 +13,16 @@ const allNavLinks: { label: string; href: string; type?: "route" }[] = [
   { label: "O nás", href: "#about" },
   { label: "Služby", href: "#services" },
   { label: "Jak to děláme", href: "/jak-to-delame", type: "route" },
-  { label: "Kontakt", href: "#contact" },
 ];
+
+/** The one ask, one click away from anywhere on the site. */
+const NavCta = ({ source, onClick }: { source: string; onClick?: () => void }) => (
+  <ConsultationDialog source={source}>
+    <GradientRimButton as="button" variant="filled" size="md" onClick={onClick}>
+      Konzultace zdarma
+    </GradientRimButton>
+  </ConsultationDialog>
+);
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -103,6 +113,7 @@ const Navbar = () => {
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 rounded-full bg-primary group-hover:w-full transition-all duration-300" />
             </a>
           ))}
+          <NavCta source="navbar" />
         </div>
 
         {/* Mobile toggle */}
@@ -144,6 +155,9 @@ const Navbar = () => {
                   {link.label}
                 </a>
               ))}
+              <div className="pt-2">
+                <NavCta source="navbar-mobile" onClick={() => setMobileOpen(false)} />
+              </div>
             </div>
           </motion.div>
         )}

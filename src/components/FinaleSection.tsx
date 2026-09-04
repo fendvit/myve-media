@@ -10,6 +10,13 @@ const socials = [
   { icon: Mail, href: "mailto:fendvit.bis@gmail.com", label: "Email" },
 ];
 
+/** Proof that already lives in the stats strip, repeated where the decision happens. */
+const proof = [
+  "Odpověď do 1 pracovního dne",
+  "Web venku za 14 dní",
+  "7+ spuštěných projektů",
+];
+
 const FinaleSection = () => {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
@@ -30,7 +37,7 @@ const FinaleSection = () => {
           transition={{ duration: 0.5 }}
           className="text-primary font-display font-medium text-xs tracking-[0.35em] uppercase mb-6"
         >
-          Kontakt
+          Konzultace zdarma
         </motion.p>
 
         <motion.h2
@@ -39,9 +46,9 @@ const FinaleSection = () => {
           transition={{ duration: 0.7 }}
           className="display-type text-foreground text-[clamp(2.6rem,8vw,7.5rem)] max-w-5xl mx-auto"
         >
-          Pojďme postavit
+          Zjistěte, co postavit,
           <br />
-          <span className="text-primary">váš projekt.</span>
+          <span className="text-primary">za kolik a kdy.</span>
         </motion.h2>
 
         <motion.p
@@ -50,23 +57,47 @@ const FinaleSection = () => {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="text-muted-foreground text-lg leading-relaxed mt-8 mb-12 max-w-xl mx-auto"
         >
-          Máte nápad nebo projekt? Probereme ho spolu — nezávazně a zdarma. Ozveme
-          se vám do 24 hodin.
+          Nemusíte nic připravovat. Nechte nám kontakt a do jednoho pracovního dne se ozveme.
+          Řekneme vám na rovinu, co dává smysl, jak dlouho by to trvalo a kolik by to stálo.
+          Zdarma a nezávazně.
         </motion.p>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6, delay: 0.3 }}
-          className="mb-14 flex justify-center"
+          className="mb-5 flex justify-center"
         >
-          <ConsultationDialog>
+          <ConsultationDialog source="home-finale">
             <GradientRimButton as="button" variant="filled">
-              <span>Nezávazná konzultace</span>
+              <span>Zjistit, co by to stálo</span>
               <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
             </GradientRimButton>
           </ConsultationDialog>
         </motion.div>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={isInView ? { opacity: 1 } : {}}
+          transition={{ duration: 0.6, delay: 0.35 }}
+          className="text-sm text-muted-foreground mb-10"
+        >
+          Když to nedává smysl, řekneme vám to na rovinu. I to je zdarma.
+        </motion.p>
+
+        <motion.ul
+          initial={{ opacity: 0 }}
+          animate={isInView ? { opacity: 1 } : {}}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="mb-14 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-display uppercase tracking-[0.2em] text-foreground/70"
+        >
+          {proof.map((item, i) => (
+            <li key={item} className="flex items-center gap-6">
+              {i > 0 && <span aria-hidden className="h-1 w-1 rounded-full bg-primary" />}
+              <span>{item}</span>
+            </li>
+          ))}
+        </motion.ul>
 
         <motion.div
           initial={{ opacity: 0 }}
