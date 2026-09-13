@@ -23,6 +23,19 @@ workflows:
       app_store_connect: MYVE App Store Connect
 
     environment:
+      # Declaring the signing here is what makes Codemagic fetch (and create on
+      # first use) the distribution certificate and provisioning profile, and
+      # install them into the build keychain before any script runs.
+      #
+      # Doing it by hand with `keychain initialize` + `app-store-connect
+      # fetch-signing-files --create` does NOT work: that path needs a
+      # certificate private key to persist the certificate it creates, and
+      # without one it fails with "Cannot save Signing Certificates without
+      # certificate private key", leaves `Provisioning Profiles: []`, and
+      # xcodebuild then dies with "App requires a provisioning profile".
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: media.myve.portal
       vars:
         XCODE_WORKSPACE: ios/App/App.xcworkspace
         XCODE_SCHEME: App
@@ -72,17 +85,11 @@ workflows:
           cd ios/App
           agvtool new-version -all $BUILD_NUMBER
 
-      - name: Fetch signing certificate and provisioning profile
-        # This is the step that removes the need for a Mac. `--create` lets
-        # Codemagic issue the distribution certificate and the App Store profile
-        # on first run instead of expecting them to already exist in a Keychain.
-        script: |
-          keychain initialize
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --create
-          keychain add-certificates
-          xcode-project use-profiles
+      - name: Apply the signing profile to the Xcode project
+        # The certificate and profile are already on the machine, put there by
+        # the `ios_signing` block above. This only writes them into the project's
+        # build settings, which Capacitor's generated project does not carry.
+        script: xcode-project use-profiles
 
       - name: Build the .ipa
         script: |
