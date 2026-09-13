@@ -215,7 +215,11 @@ beze změny; kdyby se rozešly, MCP by uměl vyrobit značky, které portál zah
 4. **Chat** je jedno vlákno na klienta napříč projekty, realtime, s přílohami.
 
 Přílohy jdou do privátního bucketu `portal-attachments` pod `<client_id>/…`,
-odkazy se podepisují na hodinu.
+odkazy se podepisují na hodinu. Přijímáme obrázky (PNG, JPEG, GIF, WebP, AVIF),
+PDF, dokumenty Office a TXT/CSV, do 10 MB. Limit hlídá appka i samotný bucket —
+seznam je na dvou místech (`ATTACHMENT_TYPES` v `src/portal/lib/db.ts` a
+`allowed_mime_types` v migraci `20260913120000_portal_attachment_limits.sql`) a
+musí zůstat stejný.
 
 ## Push notifikace
 

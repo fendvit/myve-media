@@ -1,7 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Paperclip, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { db, signAttachment, supabase, uploadAttachment } from "../lib/db";
+import {
+  ATTACHMENT_ACCEPT,
+  checkAttachment,
+  db,
+  signAttachment,
+  supabase,
+  uploadAttachment,
+} from "../lib/db";
 import { notifyNewMessage } from "../lib/push";
 import { formatDayLabel, formatTime } from "../lib/format";
 import { usePortalUnread } from "../lib/unread";
@@ -128,6 +135,29 @@ export default function Chat({ clientId, as, heading }: ChatProps) {
     };
   }, [clientId, scrollToBottom, as, markMessagesSeen]);
 
+  function pickFile(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] ?? null;
+    if (!file) {
+      setPendingFile(null);
+      return;
+    }
+
+    // `accept` only filters the picker's default view — it is still possible to
+    // choose "all files", so the check has to run on what actually came back.
+    const checked = checkAttachment(file);
+    if (checked.error) {
+      setPendingFile(null);
+      // Without the reset, picking the same file again fires no change event
+      // and the paperclip looks dead.
+      event.target.value = "";
+      setError(checked.error);
+      return;
+    }
+
+    setError(null);
+    setPendingFile(file);
+  }
+
   async function handleSend(event: React.FormEvent) {
     event.preventDefault();
     if (sending) return;
@@ -141,7 +171,10 @@ export default function Chat({ clientId, as, heading }: ChatProps) {
       let attachmentName: string | null = null;
 
       if (pendingFile) {
-        const uploaded = await uploadAttachment(clientId, pendingFile);
+        const checked = checkAttachment(pendingFile);
+        if (checked.error) throw new Error(checked.error);
+
+        const uploaded = await uploadAttachment(clientId, pendingFile, checked.contentType);
         attachmentPath = uploaded.path;
         attachmentName = uploaded.name;
       }
@@ -292,8 +325,9 @@ export default function Chat({ clientId, as, heading }: ChatProps) {
             <input
               ref={fileInputRef}
               type="file"
+              accept={ATTACHMENT_ACCEPT}
               className="hidden"
-              onChange={(event) => setPendingFile(event.target.files?.[0] ?? null)}
+              onChange={pickFile}
             />
             <Button
               type="button"

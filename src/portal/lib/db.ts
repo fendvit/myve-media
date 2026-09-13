@@ -79,8 +79,70 @@ export async function deleteClient(clientId: string, confirmName: string): Promi
   }
 }
 
+/**
+ * What a client may attach to a chat message: pictures of the thing they are
+ * asking about, plus the document formats a small business actually sends.
+ *
+ * Keyed by extension because a browser is free to report an empty `file.type`
+ * (Windows without the type registered, some Android pickers), and an empty
+ * type would otherwise be uploaded as `text/plain` and rejected by the bucket.
+ * The same list is mirrored server-side in the bucket's `allowed_mime_types` —
+ * see supabase/migrations/20260913120000_portal_attachment_limits.sql — because
+ * anything checked only here can be skipped by calling storage directly.
+ */
+const ATTACHMENT_TYPES: Record<string, string> = {
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  gif: "image/gif",
+  webp: "image/webp",
+  avif: "image/avif",
+  pdf: "application/pdf",
+  doc: "application/msword",
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  xls: "application/vnd.ms-excel",
+  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  ppt: "application/vnd.ms-powerpoint",
+  pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  txt: "text/plain",
+  csv: "text/csv",
+};
+
+/** For the file input's `accept`: extensions cover pickers that ignore MIME. */
+export const ATTACHMENT_ACCEPT = [
+  ...Object.keys(ATTACHMENT_TYPES).map((ext) => `.${ext}`),
+  ...new Set(Object.values(ATTACHMENT_TYPES)),
+].join(",");
+
+export const ATTACHMENT_MAX_BYTES = 10_000_000;
+
+/**
+ * Returns the MIME type to upload the file as, or a Czech message explaining
+ * why it cannot be sent. Extension decides, so that a file the picker typed
+ * oddly still goes up as the type the bucket expects.
+ */
+export function checkAttachment(
+  file: File,
+): { contentType: string; error?: undefined } | { contentType?: undefined; error: string } {
+  const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+  const contentType = ATTACHMENT_TYPES[ext];
+
+  if (!contentType) {
+    return { error: "Tenhle typ souboru poslat nejde. Zkuste obrázek, PDF nebo dokument." };
+  }
+  if (file.size > ATTACHMENT_MAX_BYTES) {
+    return { error: "Soubor musí být menší než 10 MB." };
+  }
+
+  return { contentType };
+}
+
 /** Attachments live under `<client_id>/…`, which is what storage RLS checks. */
-export async function uploadAttachment(clientId: string, file: File): Promise<{
+export async function uploadAttachment(
+  clientId: string,
+  file: File,
+  contentType: string,
+): Promise<{
   path: string;
   name: string;
 }> {
@@ -89,7 +151,9 @@ export async function uploadAttachment(clientId: string, file: File): Promise<{
 
   const { error } = await supabase.storage
     .from("portal-attachments")
-    .upload(path, file, { cacheControl: "3600", upsert: false });
+    // contentType is passed explicitly: the bucket filters on it, and the
+    // browser's own `file.type` can be empty or wrong.
+    .upload(path, file, { cacheControl: "3600", upsert: false, contentType });
 
   if (error) throw new Error(error.message);
   return { path, name: file.name };
