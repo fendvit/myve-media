@@ -54,8 +54,28 @@ const Privacy = () => {
             </p>
           </section>
 
+          {/* Apple requires the policy linked from an App Store listing to cover
+              what the app itself collects, not just the website. Without this
+              section a reviewer opens a document that never mentions the app —
+              guideline 5.1.1. */}
           <section>
-            <h2 className="font-display text-2xl font-semibold mt-8 mb-3">5. Jaká jsou vaše práva?</h2>
+            <h2 className="font-display text-2xl font-semibold mt-8 mb-3">5. Klientský portál (aplikace MYVE Portál)</h2>
+            <p>
+              Klientský portál běží na <strong>portal.myve.media</strong> a jako mobilní aplikace <strong>MYVE Portál</strong>. Používají ho výhradně klienti se smlouvou — účty vydávám já, veřejná registrace neexistuje.
+            </p>
+            <p className="mt-3">
+              V portálu zpracovávám jméno klienta a kontaktní údaje, které jste mi sdělili, zprávy a přílohy, které si v portálu vyměníme, a technický identifikátor zařízení pro doručení upozornění, pokud si je sami zapnete. Nesbírám polohu a aplikace neobsahuje reklamu ani analytické nástroje.
+            </p>
+            <p className="mt-3">
+              Data portálu jsou uložena u zpracovatele <strong>Supabase</strong> (databáze a přílohy). Upozornění doručují <strong>Apple Push Notification service</strong> a <strong>Firebase Cloud Messaging</strong>; předává se jim pouze identifikátor zařízení a text upozornění. Obsah portálu vidíme jen vy a já — jeden klient nikdy nevidí obsah druhého.
+            </p>
+            <p className="mt-3">
+              Obsah portálu uchovávám po dobu spolupráce. Po jejím skončení vám na požádání smažu účet i jeho obsah — stačí napsat na e-mail výše.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="font-display text-2xl font-semibold mt-8 mb-3">6. Jaká jsou vaše práva?</h2>
             <p>
               Podle GDPR máte právo mě kdykoliv požádat o informaci, jaká data o vás zpracovávám, chtít jejich úpravu, nebo požádat o jejich kompletní smazání z mé databáze. Stačí mi napsat na e-mail.
             </p>
