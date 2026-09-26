@@ -40,6 +40,26 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<!-- Chat attachments. ATTACHMENT_ACCEPT (src/portal/lib/db.ts) includes image
+	     MIME types, so the file input in Chat.tsx makes iOS offer "Take Photo"
+	     and "Photo Library". iOS terminates the process outright — a TCC SIGABRT,
+	     not a catchable error — the instant the camera is touched without
+	     NSCameraUsageDescription. That is exactly how build 1.0 (5) was rejected
+	     on 2026-09-25 under Guideline 2.1(a); the attached crash log named this
+	     key verbatim. It is NOT an iPad bug: the review device was an iPad running
+	     the app in iPhone-compatibility mode (modelCode iPad15,3, "iPhone OS 27.0"),
+	     and TARGETED_DEVICE_FAMILY = 1 does not prevent that. A phone crashes the
+	     same way. Microphone is defensive: `accept` carries no video type, so the
+	     camera sheet should open photo-only and never reach the mic — but being
+	     wrong costs another review cycle, and a usage string for a permission the
+	     app never requests is never shown to anyone. The strings are Czech because
+	     they appear in the system permission dialog and every user is a Czech client. -->
+	<key>NSCameraUsageDescription</key>
+	<string>Abyste mohli vyfotit a rovnou poslat fotku do chatu s MYVE.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Abyste mohli přiložit fotku z galerie do chatu s MYVE.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Aby mělo zvuk video, které přikládáte do chatu s MYVE.</string>
 	<!-- Wakes the app for silent/badge payloads. Without this the portal only
 	     receives pushes while it is in the foreground, which defeats the point
 	     of notifying a client that their project log moved. -->
