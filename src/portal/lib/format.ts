@@ -45,6 +45,7 @@ export function relativeFromNow(iso: string): string {
   if (hours < 24) return `před ${hours} h`;
 
   const days = Math.round(hours / 24);
+  if (days === 1) return "včera";
   if (days < 30) return `před ${days} dny`;
 
   return dateOnly.format(new Date(iso));
