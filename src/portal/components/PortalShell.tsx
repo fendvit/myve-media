@@ -3,6 +3,7 @@ import { NavLink } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import UnreadBadge from "./UnreadBadge";
+import { useViewportFit } from "../lib/viewport";
 // The wordmark cropped to its artwork. logo-myve.png is a 1024² canvas with the
 // mark filling 5% of it, so at header sizes it renders a few pixels tall — the
 // marketing nav compensates with h-32, which no app bar has room for.
@@ -27,6 +28,13 @@ interface PortalShellProps {
   fullBleed?: boolean;
   /** Client logo. When set it takes the wordmark's place and MYVE is credited under it. */
   logoUrl?: string | null;
+  /**
+   * Full-bleed screens drop the branded phone header — on a chat screen every
+   * row of it is a row of thread lost, and doubly so with the keyboard up.
+   * With a title they get a slim bar naming who the conversation is with;
+   * without one, only the status-bar inset (the page carries its own heading).
+   */
+  slimTitle?: ReactNode;
 }
 
 /**
@@ -94,9 +102,17 @@ export default function PortalShell({
   children,
   fullBleed = false,
   logoUrl,
+  slimTitle,
 }: PortalShellProps) {
+  useViewportFit();
+
   return (
-    <div className="h-[100dvh] flex bg-background text-foreground overflow-hidden">
+    // --portal-vvh is the height the keyboard leaves free (see useViewportFit);
+    // 100dvh covers the first frame and browsers without visualViewport.
+    <div
+      className="flex bg-background text-foreground overflow-hidden"
+      style={{ height: "var(--portal-vvh, 100dvh)" }}
+    >
       <aside className="hidden lg:flex w-[var(--portal-sidebar-w)] shrink-0 flex-col border-r border-border bg-card">
         {/* min-h matches ClientLogo's max-h, so the nav below starts at the same
             height whether or not the client has a logo on file. */}
@@ -153,6 +169,23 @@ export default function PortalShell({
       </aside>
 
       <div className="flex-1 min-w-0 flex flex-col">
+        {fullBleed ? (
+          slimTitle ? (
+            <header
+              className="lg:hidden shrink-0 border-b border-border bg-card"
+              style={{ paddingTop: "env(safe-area-inset-top)" }}
+            >
+              <div className="mx-auto w-full max-w-3xl px-4 h-12 flex items-center justify-center">
+                {slimTitle}
+              </div>
+            </header>
+          ) : (
+            <div
+              className="lg:hidden shrink-0 bg-background"
+              style={{ height: "env(safe-area-inset-top)" }}
+            />
+          )
+        ) : (
         <header
           className="lg:hidden shrink-0 border-b border-border bg-card/85 backdrop-blur-md"
           style={{ paddingTop: "env(safe-area-inset-top)" }}
@@ -186,6 +219,7 @@ export default function PortalShell({
             </div>
           </div>
         </header>
+        )}
 
         <main
           className={
@@ -205,9 +239,10 @@ export default function PortalShell({
 
         {/* A one-entry tab bar is just a wide button, so the phone layout drops
             it and relies on in-page navigation. The sidebar still shows it. */}
+        {/* .portal-tabbar hides while the keyboard is up (index.css). */}
         {nav.length > 1 && (
           <nav
-            className="lg:hidden shrink-0 border-t border-border bg-card"
+            className="portal-tabbar lg:hidden shrink-0 border-t border-border bg-card"
             style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
           >
             <div

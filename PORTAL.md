@@ -215,7 +215,11 @@ beze změny; kdyby se rozešly, MCP by uměl vyrobit značky, které portál zah
 4. **Chat** je jedno vlákno na klienta napříč projekty, realtime, s přílohami.
 
 Přílohy jdou do privátního bucketu `portal-attachments` pod `<client_id>/…`,
-odkazy se podepisují na hodinu.
+odkazy se podepisují na hodinu. Přijímáme obrázky (PNG, JPEG, GIF, WebP, AVIF),
+PDF, dokumenty Office a TXT/CSV, do 10 MB. Limit hlídá appka i samotný bucket —
+seznam je na dvou místech (`ATTACHMENT_TYPES` v `src/portal/lib/db.ts` a
+`allowed_mime_types` v migraci `20260913120000_portal_attachment_limits.sql`) a
+musí zůstat stejný.
 
 ## Push notifikace
 
@@ -492,6 +496,22 @@ Jak to je poskládané:
 - `POST_NOTIFICATIONS` je ručně v `AndroidManifest.xml`. Plugin ho **nedeklaruje**
   a od Androidu 13 bez něj `requestPermissions()` vrátí `denied`, aniž by se
   na cokoliv zeptal — appka cílí na 35, takže by to tiše nefungovalo všude.
+
+### Klávesnice (30. 9. 2026)
+
+Appka cílí na SDK 36, takže od Androidu 15 je vynucené edge-to-edge a okno se
+kvůli klávesnici **nezmenšuje** — klávesnice prostě překreslila spodek portálu
+i s políčkem chatu. Řeší to tři kusy, každý pro jinou platformu:
+
+| Kde | Co |
+| --- | --- |
+| Android appka | `MainActivity.java` dá WebView spodní okraj vysoký jako klávesnice (+ `adjustResize` v manifestu) |
+| Chrome na Androidu | `interactive-widget=resizes-content` v `portal.html` |
+| iOS | `useViewportFit` (`src/portal/lib/viewport.ts`) — výška šasi z `visualViewport`, stránka připnutá nahoru |
+
+Když je klávesnice nahoře, `<html data-portal-keyboard="open">` schová spodní
+záložky. Chat na telefonu nemá velkou hlavičku s logy, jen tenký pruh s tím,
+s kým si píšete (`slimTitle` v `PortalShell`).
 
 ### Co je potřeba dodělat
 

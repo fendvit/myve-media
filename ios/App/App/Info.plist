@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleDisplayName</key>
+        <string>MYVE Portál</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>Main</string>
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>armv7</string>
+	</array>
+	<!-- Portrait only. The portal's layout is a single phone-width column; the
+	     landscape variants Capacitor scaffolds by default stretch the log and
+	     chat views into unusable line lengths. iPad is switched off entirely in
+	     project.pbxproj (TARGETED_DEVICE_FAMILY = 1), so no ~ipad key here. -->
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<true/>
+	<!-- Chat attachments. ATTACHMENT_ACCEPT (src/portal/lib/db.ts) includes image
+	     MIME types, so the file input in Chat.tsx makes iOS offer "Take Photo"
+	     and "Photo Library". iOS terminates the process outright — a TCC SIGABRT,
+	     not a catchable error — the instant the camera is touched without
+	     NSCameraUsageDescription. That is exactly how build 1.0 (5) was rejected
+	     on 2026-09-25 under Guideline 2.1(a); the attached crash log named this
+	     key verbatim. It is NOT an iPad bug: the review device was an iPad running
+	     the app in iPhone-compatibility mode (modelCode iPad15,3, "iPhone OS 27.0"),
+	     and TARGETED_DEVICE_FAMILY = 1 does not prevent that. A phone crashes the
+	     same way. Microphone is defensive: `accept` carries no video type, so the
+	     camera sheet should open photo-only and never reach the mic — but being
+	     wrong costs another review cycle, and a usage string for a permission the
+	     app never requests is never shown to anyone. The strings are Czech because
+	     they appear in the system permission dialog and every user is a Czech client. -->
+	<key>NSCameraUsageDescription</key>
+	<string>Abyste mohli vyfotit a rovnou poslat fotku do chatu s MYVE.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Abyste mohli přiložit fotku z galerie do chatu s MYVE.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Aby mělo zvuk video, které přikládáte do chatu s MYVE.</string>
+	<!-- Wakes the app for silent/badge payloads. Without this the portal only
+	     receives pushes while it is in the foreground, which defeats the point
+	     of notifying a client that their project log moved. -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
+	<!-- The portal uses only HTTPS/TLS, which is exempt under the US export
+	     regulations Apple asks about. Declaring it here answers the export
+	     compliance question at build time; without it every single upload sits
+	     in App Store Connect waiting for the answer to be clicked by hand. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+</dict>
+</plist>

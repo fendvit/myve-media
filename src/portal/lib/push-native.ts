@@ -25,6 +25,57 @@ function nativePlatform(): PortalPushPlatform {
   return Capacitor.getPlatform() === "ios" ? "ios" : "android";
 }
 
+const isIos = Capacitor.getPlatform() === "ios";
+
+/**
+ * iOS needs Firebase to produce the token; Android does not.
+ *
+ * `@capacitor/push-notifications` hands back whatever token the platform gives
+ * it. On Android that is already an FCM token, which is what send-push/fcm.ts
+ * expects. On iOS it is a raw **APNs** device token — a different thing
+ * entirely. Storing it worked and the toggle read "on", but every send failed,
+ * so iOS notifications silently never arrived.
+ *
+ * The Firebase iOS SDK registers with APNs itself and exchanges that for an FCM
+ * token, so the backend keeps one code path and one token format. Android is
+ * deliberately left on the old path — it works and has shipped.
+ *
+ * Imported dynamically, and only on iOS: a static import would pull the firebase
+ * JS SDK into the *web* portal bundle, which has its own Web Push
+ * implementation and no use for it.
+ *
+ * Needs GoogleService-Info.plist in ios/App/App/ and an APNs auth key uploaded
+ * to the Firebase project (myve-klienti). Without either, getToken() rejects.
+ */
+async function iosFirebaseToken(): Promise<string> {
+  const { FirebaseMessaging } = await import("@capacitor-firebase/messaging");
+  const { token } = await FirebaseMessaging.getToken();
+  if (!token) throw new Error("Zařízení nevrátilo token pro upozornění.");
+  return token;
+}
+
+/** Permission state, asked of whichever SDK actually owns registration. */
+async function nativePermission(): Promise<"granted" | "denied" | "prompt"> {
+  if (isIos) {
+    const { FirebaseMessaging } = await import("@capacitor-firebase/messaging");
+    const { receive } = await FirebaseMessaging.checkPermissions();
+    return receive === "granted" ? "granted" : receive === "denied" ? "denied" : "prompt";
+  }
+  const { receive } = await PushNotifications.checkPermissions();
+  return receive === "granted" ? "granted" : receive === "denied" ? "denied" : "prompt";
+}
+
+/** Asks for permission through the SDK that will then mint the token. */
+async function requestNativePermission(): Promise<"granted" | "denied" | "prompt"> {
+  if (isIos) {
+    const { FirebaseMessaging } = await import("@capacitor-firebase/messaging");
+    const { receive } = await FirebaseMessaging.requestPermissions();
+    return receive === "granted" ? "granted" : receive === "denied" ? "denied" : "prompt";
+  }
+  const { receive } = await PushNotifications.requestPermissions();
+  return receive === "granted" ? "granted" : receive === "denied" ? "denied" : "prompt";
+}
+
 function rememberedToken(): string | null {
   try {
     return localStorage.getItem(TOKEN_KEY);
@@ -79,9 +130,9 @@ async function registerForToken(timeoutMs = 15_000): Promise<string> {
 }
 
 export async function getNativePushState(): Promise<"on" | "off" | "denied"> {
-  const { receive } = await PushNotifications.checkPermissions();
-  if (receive === "denied") return "denied";
-  if (receive !== "granted") return "off";
+  const permission = await nativePermission();
+  if (permission === "denied") return "denied";
+  if (permission !== "granted") return "off";
 
   const token = rememberedToken();
   if (!token) return "off";
@@ -101,14 +152,15 @@ export async function getNativePushState(): Promise<"on" | "off" | "denied"> {
 }
 
 export async function enableNativePush(): Promise<"on" | "off" | "denied"> {
-  const existing = await PushNotifications.checkPermissions();
-  const permission =
-    existing.receive === "granted" ? existing : await PushNotifications.requestPermissions();
+  const existing = await nativePermission();
+  const permission = existing === "granted" ? existing : await requestNativePermission();
 
-  if (permission.receive === "denied") return "denied";
-  if (permission.receive !== "granted") return "off";
+  if (permission === "denied") return "denied";
+  if (permission !== "granted") return "off";
 
-  const token = await registerForToken();
+  // iOS gets its token from Firebase (an FCM token); Android keeps the original
+  // PushNotifications path, which already yields one. See iosFirebaseToken.
+  const token = isIos ? await iosFirebaseToken() : await registerForToken();
 
   // p256dh/auth are deliberately absent — a check constraint rejects native rows
   // that carry a Web Push key pair.

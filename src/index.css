@@ -427,3 +427,9 @@
 @media (prefers-reduced-motion: reduce) {
   .portal-rise { animation: none; }
 }
+
+/* The phone tab bar steps aside while the keyboard is up, so the thread gets
+   the rows back. The attribute is set by useViewportFit (lib/viewport.ts). */
+:root[data-portal-keyboard="open"] .portal-tabbar {
+  display: none;
+}
