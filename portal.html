@@ -5,7 +5,13 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico" sizes="any">
     <link rel="icon" type="image/png" href="/favicon.png">
     <link rel="apple-touch-icon" href="/favicon.png">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+    <!--
+      interactive-widget: Chrome's default keyboard only shrinks the *visual*
+      viewport, so 100dvh stays full height and the chat composer ends up under
+      the keys. resizes-content makes the layout itself give way. iOS ignores it;
+      useViewportFit (src/portal/lib/viewport.ts) covers iOS.
+    -->
     <title>MYVE Portál</title>
     <meta name="description" content="Klientský portál MYVE — stav vašeho projektu, chat a kontakty na jednom místě." />
 

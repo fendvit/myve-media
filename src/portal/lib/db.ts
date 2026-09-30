@@ -180,12 +180,36 @@ export async function uploadClientLogo(clientId: string, file: File): Promise<st
   return supabase.storage.from("portal-logos").getPublicUrl(path).data.publicUrl;
 }
 
-/** The bucket is private, so links have to be signed on demand. */
-export async function signAttachment(path: string): Promise<string | null> {
-  const { data, error } = await supabase.storage
-    .from("portal-attachments")
-    .createSignedUrl(path, 60 * 60);
+const SIGNED_URL_TTL_S = 60 * 60;
 
-  if (error) return null;
-  return data.signedUrl;
+/**
+ * Signed links, kept for most of their lifetime.
+ *
+ * Every signature is a new URL, and a new URL is a cache miss — so re-signing
+ * on each visit to the chat made the browser download every photo in the
+ * thread again, and made the thread jump as they landed one by one. Reusing the
+ * link lets the HTTP cache do its job. The entry is dropped ten minutes before
+ * the link expires so nothing hands out a URL that dies mid-view.
+ */
+const signedUrls = new Map<string, { url: Promise<string | null>; staleAt: number }>();
+
+/** The bucket is private, so links have to be signed on demand. */
+export function signAttachment(path: string): Promise<string | null> {
+  const cached = signedUrls.get(path);
+  if (cached && cached.staleAt > Date.now()) return cached.url;
+
+  const url = supabase.storage
+    .from("portal-attachments")
+    .createSignedUrl(path, SIGNED_URL_TTL_S)
+    .then(({ data, error }) => {
+      // A failure is not remembered — the next render gets to try again.
+      if (error || !data) {
+        signedUrls.delete(path);
+        return null;
+      }
+      return data.signedUrl;
+    });
+
+  signedUrls.set(path, { url, staleAt: Date.now() + (SIGNED_URL_TTL_S - 10 * 60) * 1000 });
+  return url;
 }

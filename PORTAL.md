@@ -497,6 +497,22 @@ Jak to je poskládané:
   a od Androidu 13 bez něj `requestPermissions()` vrátí `denied`, aniž by se
   na cokoliv zeptal — appka cílí na 35, takže by to tiše nefungovalo všude.
 
+### Klávesnice (30. 9. 2026)
+
+Appka cílí na SDK 36, takže od Androidu 15 je vynucené edge-to-edge a okno se
+kvůli klávesnici **nezmenšuje** — klávesnice prostě překreslila spodek portálu
+i s políčkem chatu. Řeší to tři kusy, každý pro jinou platformu:
+
+| Kde | Co |
+| --- | --- |
+| Android appka | `MainActivity.java` dá WebView spodní okraj vysoký jako klávesnice (+ `adjustResize` v manifestu) |
+| Chrome na Androidu | `interactive-widget=resizes-content` v `portal.html` |
+| iOS | `useViewportFit` (`src/portal/lib/viewport.ts`) — výška šasi z `visualViewport`, stránka připnutá nahoru |
+
+Když je klávesnice nahoře, `<html data-portal-keyboard="open">` schová spodní
+záložky. Chat na telefonu nemá velkou hlavičku s logy, jen tenký pruh s tím,
+s kým si píšete (`slimTitle` v `PortalShell`).
+
 ### Co je potřeba dodělat
 
 1. **Přílohy.** `target="_blank"` na podepsané odkazy chce `@capacitor/browser`,

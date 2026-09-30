@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { Capacitor } from "@capacitor/core";
 import { Mail, MapPin, Phone, Smartphone } from "lucide-react";
 import NotificationToggle from "../components/NotificationToggle";
 import ThemeToggle from "../components/ThemeToggle";
@@ -52,8 +53,12 @@ export default function ClientContact() {
   }, [clientId]);
 
   // The install banner is only meaningful when the app is running in a tab.
+  // The store app is neither a tab nor "standalone" in the PWA sense, so it
+  // has to be ruled out by name — it was telling people who had installed the
+  // app from Google Play to add it to their home screen.
   const [installable, setInstallable] = useState(false);
   useEffect(() => {
+    if (Capacitor.isNativePlatform()) return;
     const standalone =
       window.matchMedia("(display-mode: standalone)").matches ||
       (window.navigator as { standalone?: boolean }).standalone === true;

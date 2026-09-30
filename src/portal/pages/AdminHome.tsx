@@ -226,24 +226,6 @@ export default function AdminHome() {
         </form>
       )}
 
-      <section className="bg-card border border-border rounded-2xl p-5">
-        <NotificationToggle />
-      </section>
-
-      <section className="bg-card border border-border rounded-2xl p-5">
-        <h3 className="font-display font-semibold mb-1">Účet</h3>
-        <p className="text-sm text-muted-foreground leading-relaxed mb-1">
-          Přihlášeno jako správce.
-        </p>
-        <button
-          type="button"
-          onClick={signOut}
-          className="w-full text-left text-sm text-muted-foreground hover:text-destructive transition-colors py-2"
-        >
-          Odhlásit se
-        </button>
-      </section>
-
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       {loading ? (
@@ -306,6 +288,28 @@ export default function AdminHome() {
           )}
         </>
       )}
+
+      {/* Settings close the page: the roster is what this screen is opened for,
+          and above it these two boxes pushed every client down a screen. */}
+      <div className="space-y-5 pt-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
+        <section className="bg-card border border-border rounded-2xl p-5">
+          <NotificationToggle />
+        </section>
+
+        <section className="bg-card border border-border rounded-2xl p-5">
+          <h3 className="font-display font-semibold mb-1">Účet</h3>
+          <p className="text-sm text-muted-foreground leading-relaxed mb-1">
+            Přihlášeno jako správce.
+          </p>
+          <button
+            type="button"
+            onClick={signOut}
+            className="w-full text-left text-sm text-muted-foreground hover:text-destructive transition-colors py-2"
+          >
+            Odhlásit se
+          </button>
+        </section>
+      </div>
     </div>
   );
 }

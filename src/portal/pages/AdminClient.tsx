@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   Archive,
@@ -14,12 +14,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Chat from "../components/Chat";
+import UnreadBadge from "../components/UnreadBadge";
 import UpdateBody from "../components/UpdateBody";
 import UpdateComposer from "../components/UpdateComposer";
 import { db, deleteClient, uploadClientLogo } from "../lib/db";
 import { relativeFromNow } from "../lib/format";
 import { notifyProjectProgress, notifyProjectUpdate } from "../lib/push";
 import { STATUS_PRESETS, statusTone } from "../lib/status";
+import { usePortalUnread } from "../lib/unread";
 import type { PortalClient, PortalProject, PortalUpdate } from "../lib/types";
 
 function ProjectCard({
@@ -411,7 +413,20 @@ export default function AdminClient() {
   const [client, setClient] = useState<PortalClient | null>(null);
   const [projects, setProjects] = useState<PortalProject[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"projects" | "chat">("projects");
+  const { byClient } = usePortalUnread();
+  const unreadMessages = clientId ? byClient.get(clientId)?.unread_messages ?? 0 : 0;
+
+  // A client with messages waiting opens on the chat — that is why you tapped
+  // them (or their notification). The counts can land a moment after this
+  // screen does on a cold start, so the switch also happens late, but only
+  // until you pick a tab yourself: after that nothing moves under your hand.
+  const [tab, setTab] = useState<"projects" | "chat">(() =>
+    unreadMessages > 0 ? "chat" : "projects",
+  );
+  const pickedTab = useRef(false);
+  useEffect(() => {
+    if (!pickedTab.current && unreadMessages > 0) setTab("chat");
+  }, [unreadMessages]);
   const [copied, setCopied] = useState(false);
 
   const [newProject, setNewProject] = useState("");
@@ -467,6 +482,11 @@ export default function AdminClient() {
     return <p className="text-center py-16 text-muted-foreground">Klient nenalezen.</p>;
   }
 
+  // On a phone the chat tab keeps only what a conversation needs — back, name,
+  // tabs. The code chip and the logo control wrapped onto two more rows above
+  // the thread, and with the keyboard up that left almost no thread at all.
+  const phoneChat = tab === "chat" ? "hidden lg:flex" : "";
+
   return (
     <div className="h-full flex flex-col min-h-0">
       <div className="px-4 pt-4 lg:px-10 lg:pt-8 shrink-0 mx-auto w-full max-w-3xl lg:max-w-5xl">
@@ -489,7 +509,7 @@ export default function AdminClient() {
           <button
             type="button"
             onClick={copyCode}
-            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary px-3 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className={`${phoneChat} inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary px-3 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors`}
             aria-label="Zkopírovat přístupový kód"
           >
             <span className="tracking-widest font-display">{client.access_code}</span>
@@ -500,7 +520,9 @@ export default function AdminClient() {
             )}
           </button>
 
-          <LogoField client={client} onChanged={load} />
+          <div className={phoneChat}>
+            <LogoField client={client} onChanged={load} />
+          </div>
         </div>
 
         <div className="flex gap-1 bg-secondary rounded-xl p-1 my-4 lg:max-w-xs">
@@ -513,15 +535,22 @@ export default function AdminClient() {
             <button
               key={key}
               type="button"
-              onClick={() => setTab(key)}
+              onClick={() => {
+                pickedTab.current = true;
+                setTab(key);
+              }}
               className={[
-                "flex-1 py-2 rounded-lg text-sm font-medium transition-colors",
+                "flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-colors",
                 tab === key
                   ? "bg-card text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground",
               ].join(" ")}
             >
               {label}
+              {/* Messages that arrive while you are on the projects tab. */}
+              {key === "chat" && tab !== "chat" && (
+                <UnreadBadge count={unreadMessages} variant="inline" />
+              )}
             </button>
           ))}
         </div>

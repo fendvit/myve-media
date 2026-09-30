@@ -74,6 +74,12 @@ function ClientLayout({
       logoUrl={clientLogo}
       nav={nav}
       fullBleed={pathname === "/chat"}
+      slimTitle={
+        <p className="text-sm">
+          <span className="font-display font-semibold">Vít Fendrych</span>
+          <span className="text-muted-foreground"> · MYVE</span>
+        </p>
+      }
     >
       <Outlet />
     </PortalShell>
