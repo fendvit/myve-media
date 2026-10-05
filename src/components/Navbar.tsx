@@ -12,6 +12,7 @@ const allNavLinks: { label: string; href: string; type?: "route" }[] = [
   { label: "Reference", href: "#references" },
   { label: "O nás", href: "#about" },
   { label: "Služby", href: "#services" },
+  { label: "Portál", href: "#portal" },
   { label: "Jak to děláme", href: "/jak-to-delame", type: "route" },
 ];
 
