@@ -16,6 +16,7 @@ const Privacy = () => {
         <h1 className="font-display text-4xl md:text-5xl font-bold mb-8 text-gradient">
           Zásady ochrany osobních údajů (GDPR)
         </h1>
+        <p className="text-sm text-muted-foreground -mt-4 mb-8">Aktualizováno 15. 10. 2026 · <Link to="/pravni-informace#cookies" className="hover:text-primary">Cookies a právní informace</Link></p>
 
         <div className="space-y-6 text-foreground/90 leading-relaxed">
           <p>
@@ -36,10 +37,10 @@ const Privacy = () => {
               Pokud mě kontaktujete prostřednictvím formuláře na webu nebo napřímo e-mailem, zpracovávám údaje, které mi sami sdělíte (nejčastěji jméno, e-mail, telefon a obsah zprávy).
             </p>
             <p className="mt-3">
-              Tyto údaje potřebuji k jedinému účelu: abych vám mohl odpovědět na vaši poptávku, probrat s vámi detaily projektu a případně s vámi uzavřít spolupráci.
+              Tyto údaje potřebuji k jedinému účelu: abych vám mohl odpovědět na vaši poptávku, probrat s vámi detaily projektu a případně s vámi uzavřít spolupráci. Právním základem je jednání o smlouvě na vaši žádost (čl. 6 odst. 1 písm. b) GDPR) a po uzavření spolupráce její plnění a mé zákonné povinnosti (např. účetnictví).
             </p>
             <p className="mt-3">
-              Na webu používám také vlastní měření návštěvnosti, abych věděl, odkud lidé na web přicházejí a zda funguje kontaktní formulář. Zaznamenávají se zobrazené stránky, kliknutí na tlačítka a odkazy, odeslání formuláře, zdroj návštěvy, typ zařízení a země. Měření nepoužívá cookies a do vašeho zařízení nic neukládá. IP adresa se neukládá: z ní a z údajů o prohlížeči vzniká anonymní otisk, který se každý den mění, takže vás nelze rozpoznat ani propojit vaše návštěvy v různých dnech. K údajům z formuláře se tato data nepřipojují. Právním základem je můj oprávněný zájem na fungování webu (čl. 6 odst. 1 písm. f) GDPR). Podrobné záznamy mažu po 180 dnech, dále zůstávají jen souhrnná čísla. Data jsou uložena v EU (Supabase, Irsko). Proti tomuto měření můžete vznést námitku na kontaktním e-mailu výše.
+              Na webu používám také vlastní měření návštěvnosti, abych věděl, odkud lidé na web přicházejí a zda funguje kontaktní formulář. Zaznamenávají se zobrazené stránky, kliknutí na tlačítka a odkazy, odeslání formuláře, zdroj návštěvy, typ zařízení a země. Používám k tomu vlastní měření a službu Vercel Web Analytics. Ani jedno nepoužívá cookies a do vašeho zařízení nic neukládá. IP adresa se neukládá: z ní a z údajů o prohlížeči vzniká anonymní otisk, který se každý den mění, takže vás nelze rozpoznat ani propojit vaše návštěvy v různých dnech. K údajům z formuláře se tato data nepřipojují. Právním základem je můj oprávněný zájem na fungování webu (čl. 6 odst. 1 písm. f) GDPR). Podrobné záznamy mažu po 180 dnech, dále zůstávají jen souhrnná čísla. Data jsou uložena v EU (Supabase, Irsko). Proti tomuto měření můžete vznést námitku na kontaktním e-mailu výše.
             </p>
           </section>
 
@@ -53,7 +54,7 @@ const Privacy = () => {
           <section>
             <h2 className="font-display text-2xl font-semibold mt-8 mb-3">4. Kdo další má k datům přístup?</h2>
             <p>
-              K vašim údajům mám přístup primárně já. Aby mi však web a e-maily správně fungovaly, mohu využívat prověřené poskytovatele softwaru (např. poskytovatele e-mailových schránek nebo webhostingu), kteří s daty nakládají rovněž v souladu s GDPR. Vaše data nikdy neprodávám třetím stranám.
+              K vašim údajům mám přístup primárně já. Aby web a e-maily fungovaly, využívám tyto zpracovatele: Vercel (provoz webu, odeslání formuláře a měření návštěvnosti), Resend (doručení zprávy z kontaktního formuláře do mé schránky), Google (e-mailová schránka a písma webu) a Supabase (databáze měření a klientského portálu, uložená v EU). Někteří z nich sídlí v USA; předávání údajů tam probíhá na základě záruk podle GDPR (rozhodnutí o odpovídající ochraně pro EU-US Data Privacy Framework nebo standardní smluvní doložky). Vaše data nikdy neprodávám třetím stranám.
             </p>
           </section>
 
@@ -80,7 +81,7 @@ const Privacy = () => {
           <section>
             <h2 className="font-display text-2xl font-semibold mt-8 mb-3">6. Jaká jsou vaše práva?</h2>
             <p>
-              Podle GDPR máte právo mě kdykoliv požádat o informaci, jaká data o vás zpracovávám, chtít jejich úpravu, nebo požádat o jejich kompletní smazání z mé databáze. Stačí mi napsat na e-mail.
+              Podle GDPR máte právo na přístup ke svým údajům, jejich opravu, výmaz, omezení zpracování a přenositelnost a právo vznést námitku proti zpracování založenému na oprávněném zájmu (například proti měření návštěvnosti). Stačí mi napsat na e-mail. Pokud se domníváte, že s vašimi údaji nenakládám správně, můžete podat stížnost u Úřadu pro ochranu osobních údajů (www.uoou.gov.cz).
             </p>
           </section>
 

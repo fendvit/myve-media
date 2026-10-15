@@ -18,8 +18,8 @@ const BEATS = [
   {
     index: "02",
     title: "Všechno na jednom místě.",
-    line: "Zprávy, soubory i návrhy píšete přímo nám. Žádné hledání v e-mailech, odpovídáme do 24 hodin.",
-    points: ["Chat s přílohami", "Odpověď do 24 hodin"],
+    line: "Zprávy, soubory i návrhy píšete přímo nám. Žádné hledání v e-mailech, odpovídáme do jednoho pracovního dne.",
+    points: ["Chat s přílohami", "Odpověď do 1 pracovního dne"],
   },
   {
     index: "03",

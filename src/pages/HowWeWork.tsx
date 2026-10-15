@@ -5,7 +5,7 @@ import { ArrowRight, ChevronDown, Sparkles, Wand2, ShieldCheck, CheckCircle2 } f
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Seo from "@/components/Seo";
-import { HOW_STEPS } from "@/seo/content";
+import { HOW_AFTER, HOW_STEPS } from "@/seo/content";
 import { ILLUSTRATIONS } from "@/components/howwework/StepIllustration";
 import GradientRimButton from "@/components/ui/GradientRimButton";
 import ConsultationDialog from "@/components/ConsultationDialog";
@@ -425,6 +425,25 @@ const HowWeWork = () => {
       <section className={`${!reduced ? "lg:hidden" : ""} py-10`}>
         <div className="container mx-auto px-5 max-w-xl">
           <MobileStepsAccordion total={STEPS.length} />
+        </div>
+      </section>
+
+      {/* After launch: what the monthly relationship covers (text in src/seo/content.ts) */}
+      <section className="py-16 lg:py-24 border-t border-border">
+        <div className="container mx-auto px-6 lg:px-12 max-w-5xl">
+          <h2 className="font-display text-3xl md:text-4xl font-bold mb-4">{HOW_AFTER.h2}</h2>
+          <p className="text-muted-foreground text-lg leading-relaxed mb-10 max-w-3xl">{HOW_AFTER.lead}</p>
+          <div className="grid sm:grid-cols-2 gap-6">
+            {HOW_AFTER.items.map((it) => (
+              <div key={it.title} className="rounded-2xl bg-card border border-border p-7">
+                <h3 className="font-display font-semibold text-foreground text-lg mb-2">{it.title}</h3>
+                <p className="text-muted-foreground leading-relaxed">{it.text}</p>
+              </div>
+            ))}
+          </div>
+          <Link to="/sluzby" className="inline-flex items-center gap-2 text-primary font-display font-medium text-sm mt-8 group">
+            Všechny služby <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+          </Link>
         </div>
       </section>
 

@@ -6,7 +6,7 @@
       "dest": "/portal.html"
     },
     {
-      "src": "/(_home\\.html|projekty|jak-to-delame|zasady-ochrany-osobnich-udaju|tvorba-webu-jaromer|aplikace-na-miru)(/.*)?",
+      "src": "/(_home\\.html|projekty|jak-to-delame|zasady-ochrany-osobnich-udaju|pravni-informace|sluzby|tvorba-webu|tvorba-webu-jaromer|emailing-a-automatizace|aplikace-na-miru)(/.*)?",
       "has": [{ "type": "host", "value": "portal.myve.media" }],
       "dest": "/portal.html"
     },

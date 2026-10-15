@@ -8,12 +8,12 @@ import ConsultationDialog from "@/components/ConsultationDialog";
 import GradientRimButton from "@/components/ui/GradientRimButton";
 
 const allNavLinks: { label: string; href: string; type?: "route" }[] = [
+  { label: "Služby", href: "/sluzby", type: "route" },
   { label: "Projekty", href: "/projekty", type: "route" },
-  { label: "Reference", href: "#references" },
-  { label: "O nás", href: "#about" },
-  { label: "Služby", href: "#services" },
   { label: "Portál", href: "#portal" },
   { label: "Jak to děláme", href: "/jak-to-delame", type: "route" },
+  { label: "Reference", href: "#references" },
+  { label: "O nás", href: "#about" },
 ];
 
 /** The one ask, one click away from anywhere on the site. */
@@ -102,13 +102,13 @@ const Navbar = () => {
         </a>
 
         {/* Desktop nav */}
-        <div className="hidden md:flex items-center gap-8">
+        <div className="hidden lg:flex items-center gap-7">
           {navLinks.map((link) => (
             <a
               key={link.href}
               href={link.type === "route" ? link.href : "/" + link.href}
               onClick={(e) => handleNavClick(e, link)}
-              className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors relative group"
+              className="text-muted-foreground hover:text-foreground text-sm font-medium whitespace-nowrap transition-colors relative group"
             >
               {link.label}
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 rounded-full bg-primary group-hover:w-full transition-all duration-300" />
@@ -119,7 +119,7 @@ const Navbar = () => {
 
         {/* Mobile toggle */}
         <button
-          className="md:hidden text-foreground p-2 -mr-2"
+          className="lg:hidden text-foreground p-2 -mr-2"
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label="Menu"
         >
@@ -139,7 +139,7 @@ const Navbar = () => {
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
-            className="md:hidden bg-background/95 backdrop-blur-xl border-b border-border"
+            className="lg:hidden bg-background/95 backdrop-blur-xl border-b border-border"
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}

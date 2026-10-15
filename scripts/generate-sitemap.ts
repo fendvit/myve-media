@@ -15,8 +15,10 @@ const entries: SitemapEntry[] = [
   { path: "/", changefreq: "weekly", priority: "1.0" },
   { path: "/projekty", changefreq: "weekly", priority: "0.8" },
   { path: "/jak-to-delame", changefreq: "monthly", priority: "0.7" },
+  { path: "/sluzby", changefreq: "monthly", priority: "0.9" },
   ...SERVICES.map((s) => ({ path: s.path, changefreq: "monthly" as const, priority: "0.9" })),
   { path: "/zasady-ochrany-osobnich-udaju", changefreq: "yearly", priority: "0.2" },
+  { path: "/pravni-informace", changefreq: "yearly", priority: "0.2" },
 ];
 
 // Vercel passes the env; a local build falls back to .env.local / .env
