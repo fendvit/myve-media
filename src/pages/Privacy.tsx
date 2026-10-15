@@ -38,6 +38,9 @@ const Privacy = () => {
             <p className="mt-3">
               Tyto údaje potřebuji k jedinému účelu: abych vám mohl odpovědět na vaši poptávku, probrat s vámi detaily projektu a případně s vámi uzavřít spolupráci.
             </p>
+            <p className="mt-3">
+              Na webu používám také vlastní měření návštěvnosti, abych věděl, odkud lidé na web přicházejí a zda funguje kontaktní formulář. Zaznamenávají se zobrazené stránky, kliknutí na tlačítka a odkazy, odeslání formuláře, zdroj návštěvy, typ zařízení a země. Měření nepoužívá cookies a do vašeho zařízení nic neukládá. IP adresa se neukládá: z ní a z údajů o prohlížeči vzniká anonymní otisk, který se každý den mění, takže vás nelze rozpoznat ani propojit vaše návštěvy v různých dnech. K údajům z formuláře se tato data nepřipojují. Právním základem je můj oprávněný zájem na fungování webu (čl. 6 odst. 1 písm. f) GDPR). Podrobné záznamy mažu po 180 dnech, dále zůstávají jen souhrnná čísla. Data jsou uložena v EU (Supabase, Irsko). Proti tomuto měření můžete vznést námitku na kontaktním e-mailu výše.
+            </p>
           </section>
 
           <section>
