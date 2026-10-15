@@ -15,7 +15,7 @@
 // shell exactly as before, and the next deploy adds it.
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "fs";
 import { dirname, resolve } from "path";
-import { AREA, BUSINESS, HOW_STEPS, OG_IMAGE, PAGES, SERVICES, SITE, breadcrumbLd, businessLd, serviceLd } from "../src/seo/content";
+import { AREA, BUSINESS, HOW_AFTER, HOW_STEPS, LEGAL, OFFER, OG_IMAGE, PAGES, SERVICES, SITE, breadcrumbLd, businessLd, serviceLd } from "../src/seo/content";
 
 const DIST = resolve("dist");
 
@@ -48,9 +48,9 @@ async function projects(): Promise<Project[]> {
 }
 
 // ------------------------------------------------------------------ the shared frame
-const NAV = `<nav aria-label="Hlavní navigace"><a href="/">MYVE</a> · <a href="/tvorba-webu-jaromer">Tvorba webů Jaroměř</a> · <a href="/aplikace-na-miru">Aplikace na míru</a> · <a href="/projekty">Projekty</a> · <a href="/jak-to-delame">Jak to děláme</a></nav>`;
+const NAV = `<nav aria-label="Hlavní navigace"><a href="/">MYVE</a> · <a href="/sluzby">Služby</a> · <a href="/tvorba-webu">Tvorba webů</a> · <a href="/emailing-a-automatizace">E-maily a automatizace</a> · <a href="/aplikace-na-miru">Aplikace na míru</a> · <a href="/projekty">Projekty</a> · <a href="/jak-to-delame">Jak to děláme</a></nav>`;
 const FOOT = `<footer><p><strong>${esc(BUSINESS.name)}</strong> · ${esc(BUSINESS.street)}, ${esc(BUSINESS.postalCode)} ${esc(BUSINESS.locality)} · <a href="tel:${BUSINESS.phone}">${esc(BUSINESS.phoneDisplay)}</a> · <a href="mailto:${BUSINESS.email}">${esc(BUSINESS.email)}</a> · IČO ${BUSINESS.ico}</p>
-<p>Weby a aplikace pro firmy z oblasti: ${AREA.map(esc).join(", ")}.</p><p><a href="/zasady-ochrany-osobnich-udaju">Zásady ochrany osobních údajů</a></p></footer>`;
+<p>Weby a aplikace pro firmy z oblasti: ${AREA.map(esc).join(", ")}.</p><p><a href="/zasady-ochrany-osobnich-udaju">Ochrana osobních údajů</a> · <a href="/pravni-informace">Právní informace</a> · <a href="/tvorba-webu-jaromer">Tvorba webů Jaroměř</a></p></footer>`;
 // visible for the moment before the app takes over (and for anyone without JavaScript)
 const STYLE = `<style>.seo-static{max-width:860px;margin:0 auto;padding:96px 24px 48px;font:16px/1.6 system-ui,sans-serif;color:#e8e6e3}.seo-static a{color:#ff5d42}.seo-static h1{font-size:2.4rem;line-height:1.1}.seo-static nav,.seo-static footer{font-size:14px;opacity:.8;margin:24px 0}</style>`;
 
@@ -114,9 +114,8 @@ async function main() {
   pages.push({ file: "_home.html", path: "/", ...PAGES.home, lds: [], body: `<main>
 <h1>MYVE — tvorba webů a aplikací na míru</h1>
 <p>Jmenuji se Vít Fendrych a pomáhám firmám být vidět online. V rámci projektu MYVE — Making You Visible Everywhere tvoříme moderní webové stránky, webové aplikace a software na míru. Naším cílem není jen hezký web, ale funkční řešení, které pomáhá firmám růst.</p>
-<h2>Co děláme</h2><ul>
-<li><a href="/tvorba-webu-jaromer">Tvorba webů v Jaroměři a okolí</a> — web, který prodává, i když spíte. Do 14 dní od zadání.</li>
-<li><a href="/aplikace-na-miru">Aplikace a software na míru</a> — z procesu, který zdržuje, uděláme systém, který šlape. Když hotová řešení nestačí, postavíme vlastní.</li></ul>
+<h2>Ne jen web. Celý systém.</h2><p>Web, e-maily, automatizace i aplikace — postavené tak, aby na sebe navazovaly, a s někým, kdo se o ně stará i po spuštění.</p><ul>${OFFER.pillars.map((p) => `<li><a href="${p.path}">${esc(p.title)}</a> — ${esc(p.text)}</li>`).join("")}</ul><p><a href="/sluzby">Všechno, co pro vás postavíme</a></p>
+<h2>Klientská aplikace MYVE Portál</h2><p>${esc(OFFER.bonuses[0].text)}</p>
 <h2>V číslech</h2><ul><li>7+ projektů spuštěných pro české firmy</li><li>14 dní od zadání ke spuštění webu</li><li>40+ hodin měsíčně, které klienti nemusí řešit ručně</li><li>1 pracovní den — déle na naši odpověď nečekáte</li></ul>
 ${projLinks ? `<h2>Naše práce</h2><ul>${projLinks}</ul>` : ""}
 <p><a href="/jak-to-delame">Jak to děláme</a> · <a href="/projekty">Všechny projekty</a></p></main>` });
@@ -129,10 +128,25 @@ ${projLinks ? `<h2>Naše práce</h2><ul>${projLinks}</ul>` : ""}
     lds: [breadcrumbLd([{ name: "MYVE", path: "/" }, { name: "Jak to děláme", path: "/jak-to-delame" }])],
     body: `<main><p>Proces</p><h1>Od zadání ke spuštění. Bez překvapení.</h1>
 <p>Běžný web spouštíme v průměru za 14 dní a na každou zprávu odpovídáme do jednoho pracovního dne.</p>
-${HOW_STEPS.map((s) => `<section><h2>${esc(s.number)} ${esc(s.title)}</h2><p>${esc(s.body)}</p><p><strong>${esc(s.badge.title)}</strong> ${esc(s.badge.subtitle)}</p></section>`).join("")}</main>` });
+${HOW_STEPS.map((s) => `<section><h2>${esc(s.number)} ${esc(s.title)}</h2><p>${esc(s.body)}</p><p><strong>${esc(s.badge.title)}</strong> ${esc(s.badge.subtitle)}</p></section>`).join("")}
+<section><h2>${esc(HOW_AFTER.h2)}</h2><p>${esc(HOW_AFTER.lead)}</p><ul>${HOW_AFTER.items.map((i) => `<li><strong>${esc(i.title)}</strong> — ${esc(i.text)}</li>`).join("")}</ul><p><a href="/sluzby">Všechny služby</a></p></section></main>` });
 
   pages.push({ file: "zasady-ochrany-osobnich-udaju/index.html", path: "/zasady-ochrany-osobnich-udaju", ...PAGES.privacy, lds: [],
     body: `<main><h1>Zásady ochrany osobních údajů</h1><p>${esc(PAGES.privacy.description)}</p></main>` });
+
+  pages.push({ file: "sluzby/index.html", path: "/sluzby", ...PAGES.services,
+    lds: [breadcrumbLd([{ name: "MYVE", path: "/" }, { name: "Služby", path: "/sluzby" }]),
+          { "@context": "https://schema.org", "@type": "ItemList", name: "Služby MYVE",
+            itemListElement: OFFER.pillars.map((p, i) => ({ "@type": "ListItem", position: i + 1, name: p.title, url: `${SITE}${p.path}` })) }],
+    body: `<main><p>${esc(OFFER.eyebrow)}</p><h1>${esc(OFFER.h1)}</h1><p>${esc(OFFER.lead)}</p>
+<section><h2>Tři pilíře</h2><ol>${OFFER.pillars.map((p) => `<li><a href="${p.path}">${esc(p.title)}</a> — ${esc(p.text)}</li>`).join("")}</ol></section>
+<section><h2>A navíc ke každé spolupráci</h2><ul>${OFFER.bonuses.map((b) => `<li><strong>${esc(b.title)}</strong> — ${esc(b.text)}</li>`).join("")}</ul></section>
+<section><h2>Co od nás můžete čekat</h2><dl>${OFFER.dials.map((d) => `<dt>${esc(d.k)}</dt><dd>${esc(d.v)}</dd>`).join("")}</dl></section>
+<section><h2>Co když…</h2>${OFFER.risks.map((r) => `<h3>${esc(r.q)}</h3><p>${esc(r.a)}</p>`).join("")}</section></main>` });
+
+  pages.push({ file: "pravni-informace/index.html", path: "/pravni-informace", ...PAGES.legal, lds: [],
+    body: `<main><h1>Právní informace</h1><p>Aktualizováno ${esc(LEGAL.updated)}</p>${LEGAL.sections.map((x) =>
+      `<section${x.id ? ` id="${x.id}"` : ""}><h2>${esc(x.h2)}</h2>${x.text.map((t) => `<p>${esc(t)}</p>`).join("")}</section>`).join("")}</main>` });
 
   for (const s of SERVICES) pages.push(servicePage(s, byslug));
 

@@ -8,6 +8,7 @@ import PartnersMarquee from "@/components/PartnersMarquee";
 import PillarsSection from "@/components/PillarsSection";
 import WorkSection from "@/components/WorkSection";
 import TestimonialsSection from "@/components/TestimonialsSection";
+import PortalSection from "@/components/PortalSection";
 import FinaleSection from "@/components/FinaleSection";
 import Footer from "@/components/Footer";
 import Seo from "@/components/Seo";
@@ -40,6 +41,7 @@ const Index = () => {
         <StatsStrip />
         <PillarsSection />
         <ServicesLinks />
+        <PortalSection />
         <FinaleSection />
       </main>
       <Footer />
