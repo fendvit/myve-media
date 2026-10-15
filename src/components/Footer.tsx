@@ -32,7 +32,13 @@ const Footer = () => {
         </div>
 
         {/* Contact info */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 text-sm text-muted-foreground text-center md:text-left">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 text-sm text-muted-foreground text-center md:text-left">
+          <div>
+            <p className="font-semibold text-foreground mb-1">Služby</p>
+            <p><Link to="/tvorba-webu-jaromer" className="hover:text-primary transition-colors">Tvorba webů Jaroměř</Link></p>
+            <p><Link to="/aplikace-na-miru" className="hover:text-primary transition-colors">Aplikace na míru</Link></p>
+            <p><Link to="/projekty" className="hover:text-primary transition-colors">Reference</Link></p>
+          </div>
           <div>
             <p className="font-semibold text-foreground mb-1">Adresa</p>
             <p>Obránců míru 449</p>

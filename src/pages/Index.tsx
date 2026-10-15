@@ -11,6 +11,8 @@ import TestimonialsSection from "@/components/TestimonialsSection";
 import FinaleSection from "@/components/FinaleSection";
 import Footer from "@/components/Footer";
 import Seo from "@/components/Seo";
+import ServicesLinks from "@/components/ServicesLinks";
+import { PAGES } from "@/seo/content";
 
 const Index = () => {
   const location = useLocation();
@@ -27,11 +29,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Seo
-        title="MYVE — Weby, aplikace a software na míru"
-        description="Studio MYVE tvoří moderní weby, webové aplikace a software na míru. Making You Visible Everywhere."
-        path="/"
-      />
+      <Seo title={PAGES.home.title} description={PAGES.home.description} path="/" />
       <ScrollProgress />
       <Navbar />
       <main>
@@ -41,6 +39,7 @@ const Index = () => {
         <TestimonialsSection />
         <StatsStrip />
         <PillarsSection />
+        <ServicesLinks />
         <FinaleSection />
       </main>
       <Footer />

@@ -6,6 +6,7 @@ import { motion, transform, useReducedMotion, useScroll, useTransform } from "fr
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { PAGES, breadcrumbLd } from "@/seo/content";
 import Seo from "@/components/Seo";
 import DeviceMockup from "@/components/ui/device-mockup";
 import { cn } from "@/lib/utils";
@@ -69,11 +70,8 @@ const Projects = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Seo
-        title="Projekty — MYVE"
-        description="Portfolio realizovaných webů a aplikací studia MYVE. Případové studie, technologie a výsledky."
-        path="/projekty"
-      />
+      <Seo title={PAGES.projects.title} description={PAGES.projects.description} path="/projekty"
+        jsonLd={[breadcrumbLd([{ name: "MYVE", path: "/" }, { name: "Projekty", path: "/projekty" }])]} />
       <Navbar />
       <main ref={pageRef} className="relative overflow-hidden">
         {/* Scrolling background wordmark */}

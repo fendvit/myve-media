@@ -5,6 +5,12 @@
       "has": [{ "type": "host", "value": "portal.myve.media" }],
       "dest": "/portal.html"
     },
+    {
+      "src": "/(_home\\.html|projekty|jak-to-delame|zasady-ochrany-osobnich-udaju|tvorba-webu-jaromer|aplikace-na-miru)(/.*)?",
+      "has": [{ "type": "host", "value": "portal.myve.media" }],
+      "dest": "/portal.html"
+    },
+    { "src": "/", "dest": "/_home.html" },
     { "handle": "filesystem" },
     {
       "src": "/(.*)",

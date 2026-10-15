@@ -5,41 +5,15 @@ import { ArrowRight, ChevronDown, Sparkles, Wand2, ShieldCheck, CheckCircle2 } f
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Seo from "@/components/Seo";
+import { HOW_STEPS } from "@/seo/content";
 import { ILLUSTRATIONS } from "@/components/howwework/StepIllustration";
 import GradientRimButton from "@/components/ui/GradientRimButton";
 import ConsultationDialog from "@/components/ConsultationDialog";
 import { cn } from "@/lib/utils";
 
-const STEPS = [
-  {
-    number: "01",
-    title: "Přesně víte, do čeho jdete",
-    body:
-      "Většina projektů selže dřív, než padne první řádek kódu — protože nikdo pořádně nezjistil, co má vlastně vyřešit. Proto začínáme u vašeho byznysu: kdo jsou vaši zákazníci, kde ztrácíte čas nebo peníze a co se musí stát, aby se investice vrátila. Výstupem je jasný rozsah, termín i cena — víte, co dostanete a za kolik, ještě než začneme.",
-    badge: { icon: Sparkles, title: "Víte, za co platíte.", subtitle: "Rozsah, termín i cena jsou jasné před začátkem prací." },
-  },
-  {
-    number: "02",
-    title: "Vidíte to, než to začneme stavět",
-    body:
-      "Než se začne programovat, uvidíte, jak bude váš web nebo aplikace vypadat a fungovat — do posledního tlačítka. Návrhy spolu procházíme a upravujeme, dokud nesedí. Právě teď jsou změny nejrychlejší a nejlevnější; přepisovat hotový kód stojí násobně víc. Dokud návrh neschválíte, nepokračujeme dál.",
-    badge: { icon: Wand2, title: "Nic se neprogramuje bez vašeho OK.", subtitle: "Úpravy návrhu řešíme obratem, dokud nesedí." },
-  },
-  {
-    number: "03",
-    title: "Stavíme na míru, ne na krabici",
-    body:
-      "Teď se staví. Píšeme vlastní kód, napojujeme databáze a integrace a průběžně testujeme na mobilech, tabletech i desktopech. Nestavíme na šabloně, která vás za rok zastaví — řešení jde kdykoliv rozšířit o další funkce. Po celou dobu víte, v jaké fázi jsme, a na zprávu odpovídáme do jednoho pracovního dne.",
-    badge: { icon: ShieldCheck, title: "Rychlé, bezpečné a rozšiřitelné.", subtitle: "Vlastní kód, na kterém se dá stavět dál — ne šablona." },
-  },
-  {
-    number: "04",
-    title: "Poslední slovo máte vy",
-    body:
-      "Testovací verzi dostanete dřív, než ji uvidí kterýkoliv z vašich zákazníků. V klidu si všechno proklikáte a co nesedí, doladíme. Spouštíme až ve chvíli, kdy řeknete, že je to hotové. A po spuštění nekončíme — ozvat se můžete kdykoliv, když bude potřeba cokoliv upravit nebo doplnit.",
-    badge: { icon: CheckCircle2, title: "Spouštíme, až řeknete vy.", subtitle: "Testovací verzi vidíte první — a po spuštění nezůstanete sami." },
-  },
-];
+const ICONS = [Sparkles, Wand2, ShieldCheck, CheckCircle2];
+// the words live in src/seo/content.ts (HOW_STEPS), shared with the static HTML for Google
+const STEPS = HOW_STEPS.map((s, i) => ({ ...s, badge: { ...s.badge, icon: ICONS[i] } }));
 
 // Final resting offsets per card so they read as a stacked deck
 const RESTING = [
