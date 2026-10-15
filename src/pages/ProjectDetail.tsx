@@ -5,6 +5,7 @@ import { ArrowLeft, ExternalLink, Globe } from "lucide-react";
 import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { breadcrumbLd } from "@/seo/content";
 import Seo from "@/components/Seo";
 import { useState } from "react";
 
@@ -70,6 +71,8 @@ const ProjectDetail = () => {
         title={`${project.title} — Projekt | MYVE`}
         description={(project.description || `Případová studie projektu ${project.title} od studia MYVE.`).slice(0, 155)}
         path={`/projekty/${project.slug}`}
+        image={project.image_url || undefined}
+        jsonLd={[breadcrumbLd([{ name: "MYVE", path: "/" }, { name: "Projekty", path: "/projekty" }, { name: project.title, path: `/projekty/${project.slug}` }])]}
         type="article"
       />
       <Navbar />

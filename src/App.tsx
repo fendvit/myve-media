@@ -14,6 +14,8 @@ import HowWeWork from "./pages/HowWeWork";
 import NotFound from "./pages/NotFound";
 import ResetPassword from "./pages/ResetPassword";
 import Privacy from "./pages/Privacy";
+import ServicePage from "./pages/ServicePage";
+import { SERVICES } from "./seo/content";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +36,9 @@ const App = () => (
           <Route path="/admin" element={<Admin />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/zasady-ochrany-osobnich-udaju" element={<Privacy />} />
+          {SERVICES.map((s) => (
+            <Route key={s.path} path={s.path} element={<ServicePage data={s} />} />
+          ))}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
