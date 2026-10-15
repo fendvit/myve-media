@@ -21,6 +21,14 @@
     </script>
     <script defer src="/_vercel/insights/script.js"></script>
 
+    <!-- First-party measurement (reel-insights t.js): page views, where visitors come from and
+         which tracked link brought them, plus the same funnel events as above (track.ts sends
+         both). Cookieless: nothing stored on the device, no IP kept; described in the privacy
+         policy, section 2. Marketing site only: the client portal is portal.html and the
+         native build, which never load this file. /admin + /reset-password are excluded.
+         data-site is a public key, not a secret. -->
+    <script defer src="https://go.tnextlvl.com/t.js" data-site="myve_6e09ad5603" data-exclude="/admin,/reset-password"></script>
+
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://myve.media/" />
     <meta property="og:title" content="MYVE — Vít Fendrych | Web &amp; App Development" />
