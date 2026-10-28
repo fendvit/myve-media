@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import AdminChanges from "../components/AdminChanges";
 import Chat from "../components/Chat";
 import UnreadBadge from "../components/UnreadBadge";
 import UpdateBody from "../components/UpdateBody";
@@ -420,7 +421,7 @@ export default function AdminClient() {
   // them (or their notification). The counts can land a moment after this
   // screen does on a cold start, so the switch also happens late, but only
   // until you pick a tab yourself: after that nothing moves under your hand.
-  const [tab, setTab] = useState<"projects" | "chat">(() =>
+  const [tab, setTab] = useState<"projects" | "chat" | "changes">(() =>
     unreadMessages > 0 ? "chat" : "projects",
   );
   const pickedTab = useRef(false);
@@ -525,11 +526,12 @@ export default function AdminClient() {
           </div>
         </div>
 
-        <div className="flex gap-1 bg-secondary rounded-xl p-1 my-4 lg:max-w-xs">
+        <div className="flex gap-1 bg-secondary rounded-xl p-1 my-4 lg:max-w-sm">
           {(
             [
               ["projects", "Projekty"],
               ["chat", "Chat"],
+              ["changes", "Změny"],
             ] as const
           ).map(([key, label]) => (
             <button
@@ -593,6 +595,12 @@ export default function AdminClient() {
             )}
 
             <DangerZone client={client} onChanged={load} />
+          </div>
+        </div>
+      ) : tab === "changes" ? (
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <div className="mx-auto w-full max-w-3xl lg:max-w-5xl px-4 pb-6 lg:px-10 lg:pb-10">
+            <AdminChanges clientId={clientId} projects={projects} />
           </div>
         </div>
       ) : (

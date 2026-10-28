@@ -119,19 +119,30 @@ export default function ClientHome() {
     }
     let active = true;
 
-    db.from("portal_updates")
-      .select("*")
-      .eq("project_id", activeId)
-      .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        if (!active) return;
-        setUpdates((data as PortalUpdate[]) ?? []);
+    const fetchUpdates = () =>
+      db
+        .from("portal_updates")
+        .select("*")
+        .eq("project_id", activeId)
+        .order("created_at", { ascending: false })
+        .then(({ data, error }) => {
+          if (!active || error) return;
+          setUpdates((data as PortalUpdate[]) ?? []);
         // The watermark is per client, not per project, so viewing one
         // project's timeline clears the badge for all of them. Acceptable
         // because the project switcher sits directly above this list — the
         // alternative is a second watermark table for a badge.
-        if (clientId) void markUpdatesSeen(clientId);
-      });
+          if (clientId) void markUpdatesSeen(clientId);
+        });
+
+    void fetchUpdates();
+
+    // Realtime does not replay what it missed while the app sat in the
+    // background, so the timeline is fetched again when the screen returns.
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void fetchUpdates();
+    };
+    document.addEventListener("visibilitychange", onVisible);
 
     // Without this, an entry posted while the client is on this very screen
     // would raise a badge on the tab they are already looking at, and the
@@ -160,6 +171,7 @@ export default function ClientHome() {
 
     return () => {
       active = false;
+      document.removeEventListener("visibilitychange", onVisible);
       void supabase.removeChannel(channel);
     };
   }, [activeId, clientId, markUpdatesSeen]);

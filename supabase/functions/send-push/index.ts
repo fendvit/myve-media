@@ -189,6 +189,45 @@ Deno.serve(async (req) => {
       text = `${project.name}: teď na ${project.progress} %`;
       url = PORTAL_ORIGIN;
       tag = `portal-progress-${project.id}`;
+    } else if (kind === "change") {
+      const changeId = body.change_id;
+      if (typeof changeId !== "string") return json({ error: "change_id required" }, 400);
+
+      const { data: change } = await admin
+        .from("portal_change_requests")
+        .select("id, client_id, body, status")
+        .eq("id", changeId)
+        .maybeSingle();
+      if (!change) return json({ error: "Change request not found" }, 404);
+
+      const ownsRequest = callerProfile.client_id === change.client_id;
+      if (!isAdmin && !ownsRequest) return json({ error: "Forbidden" }, 403);
+
+      const { data: client } = await admin
+        .from("portal_clients")
+        .select("id, name, auth_user_id")
+        .eq("id", change.client_id)
+        .maybeSingle();
+
+      if (isAdmin) {
+        // The admin moved the request on: tell the client where it stands.
+        const labels: Record<string, string> = {
+          new: "přijat",
+          in_progress: "v řešení",
+          done: "hotový",
+          declined: "zamítnutý",
+        };
+        recipientIds = client?.auth_user_id ? [client.auth_user_id] : [];
+        title = `Požadavek je ${labels[change.status] ?? "aktualizovaný"}`;
+        url = `${PORTAL_ORIGIN}/zmeny`;
+      } else {
+        const { data: admins } = await admin.from("portal_profiles").select("user_id").eq("role", "admin");
+        recipientIds = (admins ?? []).map((row: { user_id: string }) => row.user_id);
+        title = client?.name ? `Nový požadavek — ${client.name}` : "Nový požadavek na změnu";
+        url = `${PORTAL_ORIGIN}/admin/${change.client_id}`;
+      }
+      text = truncate(change.body);
+      tag = `portal-change-${change.id}`;
     } else {
       return json({ error: "Unknown kind" }, 400);
     }

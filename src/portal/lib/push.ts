@@ -179,6 +179,14 @@ export async function notifyProjectUpdate(updateId: string): Promise<void> {
   await requestPush({ kind: "update", update_id: updateId });
 }
 
+/**
+ * A change request was filed (client → admins) or its status changed
+ * (admin → client). The function works out which from who is calling.
+ */
+export async function notifyChangeRequest(requestId: string): Promise<void> {
+  await requestPush({ kind: "change", change_id: requestId });
+}
+
 /** Notifies the client that their project's progress just changed. */
 export async function notifyProjectProgress(projectId: string): Promise<void> {
   await requestPush({ kind: "progress", project_id: projectId });
