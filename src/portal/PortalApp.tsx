@@ -9,13 +9,14 @@ import {
   useNavigate,
 } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
-import { Home, Loader2, MessageCircle, Phone, Sparkles, Users } from "lucide-react";
+import { Home, ListChecks, Loader2, MessageCircle, Phone, Sparkles, Users } from "lucide-react";
 import CodeGate from "./components/CodeGate";
 import Chat from "./components/Chat";
 import PortalShell, { type NavItem } from "./components/PortalShell";
 import AdminClient from "./pages/AdminClient";
 import AdminHome from "./pages/AdminHome";
 import AdminMcp from "./pages/AdminMcp";
+import ClientChanges from "./pages/ClientChanges";
 import ClientContact from "./pages/ClientContact";
 import ClientHome from "./pages/ClientHome";
 import { db } from "./lib/db";
@@ -28,6 +29,7 @@ import type { PortalClient } from "./lib/types";
 const CLIENT_NAV: Omit<NavItem, "badge">[] = [
   { to: "/", label: "Projekt", icon: Home, end: true },
   { to: "/chat", label: "Chat", icon: MessageCircle },
+  { to: "/zmeny", label: "Změny", icon: ListChecks },
   { to: "/kontakt", label: "Kontakt", icon: Phone },
 ];
 
@@ -158,6 +160,7 @@ function ClientRoutes({ clientId }: { clientId: string }) {
       >
         <Route index element={<ClientHome />} />
         <Route path="chat" element={<ClientChatRoute clientId={clientId} />} />
+        <Route path="zmeny" element={<ClientChanges />} />
         <Route path="kontakt" element={<ClientContact />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

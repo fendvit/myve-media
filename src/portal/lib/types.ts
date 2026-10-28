@@ -61,6 +61,22 @@ export type PortalMessage = {
   read_at: string | null;
 };
 
+export type ChangeRequestStatus = "new" | "in_progress" | "done" | "declined";
+
+export type PortalChangeRequest = {
+  id: string;
+  client_id: string;
+  /** Null when the client did not tie it to one project, or the project was deleted. */
+  project_id: string | null;
+  body: string;
+  status: ChangeRequestStatus;
+  /** The admin's answer, shown to the client under the request. */
+  admin_note: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type PortalProfile = {
   user_id: string;
   role: PortalRole;
@@ -153,6 +169,12 @@ export type PortalDatabase = {
         PortalMessage,
         { client_id: string; sender_role: SenderRole } & Partial<
           Omit<PortalMessage, "client_id" | "sender_role">
+        >
+      >;
+      portal_change_requests: Table<
+        PortalChangeRequest,
+        { client_id: string; body: string } & Partial<
+          Omit<PortalChangeRequest, "client_id" | "body">
         >
       >;
       portal_profiles: Table<PortalProfile>;

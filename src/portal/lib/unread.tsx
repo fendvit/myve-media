@@ -84,7 +84,15 @@ export function PortalUnreadProvider({ children }: { children: ReactNode }) {
       )
       .subscribe();
 
+    // Inserts made while the app sat in the background never reach the
+    // channel, so the badges are recounted when the screen comes back.
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void refreshRef.current();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
     return () => {
+      document.removeEventListener("visibilitychange", onVisible);
       void supabase.removeChannel(channel);
     };
   }, [userId, refresh]);

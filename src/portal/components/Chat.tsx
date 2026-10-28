@@ -28,19 +28,38 @@ const STICK_THRESHOLD_PX = 80;
 /** The bucket is private, so each attachment needs a short-lived signed URL. */
 function Attachment({ path, name }: { path: string; name: string | null }) {
   const [url, setUrl] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let active = true;
+    setFailed(false);
     signAttachment(path).then((signed) => {
-      if (active) setUrl(signed);
+      if (!active) return;
+      setUrl(signed);
+      // A null here used to leave the spinner turning forever, with no way to
+      // get the file short of reopening the app.
+      setFailed(signed === null);
     });
     return () => {
       active = false;
     };
-  }, [path]);
+  }, [path, attempt]);
 
   const label = name ?? "Příloha";
   const isImage = /\.(png|jpe?g|gif|webp|avif)$/i.test(path);
+
+  if (failed) {
+    return (
+      <button
+        type="button"
+        onClick={() => setAttempt((count) => count + 1)}
+        className="flex items-center gap-2 text-xs underline underline-offset-2 opacity-80"
+      >
+        <Paperclip className="h-3 w-3 shrink-0" /> {label} — načíst znovu
+      </button>
+    );
+  }
 
   if (!url) {
     return (
@@ -198,6 +217,17 @@ function Composer({
   useEffect(() => {
     writeDraft(storageKey, draft);
   }, [storageKey, draft]);
+
+  // Opening the chat means you came to write: the cursor waits in the box, so
+  // nobody has to find and tap it first. preventScroll keeps the thread put.
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    textarea.focus({ preventScroll: true });
+    // Cursor after a restored draft, not before it.
+    const end = textarea.value.length;
+    textarea.setSelectionRange(end, end);
+  }, []);
 
   // Grows with the text up to max-h, then scrolls inside. A fixed one-row box
   // made anything longer than a line impossible to read back before sending.
@@ -411,21 +441,55 @@ export default function Chat({ clientId, as, heading }: ChatProps) {
   useEffect(() => {
     let active = true;
     setLoading(true);
+    setLoadError(null);
     stuckRef.current = true;
     setUnseenBelow(0);
+    let loaded = false;
 
-    db.from("portal_messages")
-      .select("*")
-      .eq("client_id", clientId)
-      .order("created_at", { ascending: true })
-      .then(({ data, error }) => {
-        if (!active) return;
-        if (error) setLoadError("Zprávy se nepodařilo načíst.");
-        else setMessages((data as PortalMessage[]) ?? []);
-        setLoading(false);
-        // The thread is on screen, so it counts as read.
-        void markMessagesSeen(clientId);
-      });
+    const fetchThread = () =>
+      db
+        .from("portal_messages")
+        .select("*")
+        .eq("client_id", clientId)
+        .order("created_at", { ascending: true })
+        .then(({ data, error }) => {
+          if (!active) return;
+          if (error) {
+            // A failed refresh keeps the thread already on screen.
+            if (!loaded) setLoadError("Zprávy se nepodařilo načíst.");
+            setLoading(false);
+            return;
+          }
+          loaded = true;
+          setLoadError(null);
+          const fetched = (data as PortalMessage[]) ?? [];
+          // Keep anything that landed (sent, or via realtime) while this
+          // request was in flight — the response can be older than the screen.
+          setMessages((current) => {
+            const known = new Set(fetched.map((message) => message.id));
+            const newest = fetched[fetched.length - 1]?.created_at ?? "";
+            const later = current.filter(
+              (message) => !known.has(message.id) && message.created_at > newest,
+            );
+            return later.length ? [...fetched, ...later] : fetched;
+          });
+          setLoading(false);
+          // The thread is on screen, so it counts as read.
+          void markMessagesSeen(clientId);
+        });
+
+    void fetchThread();
+
+    // Realtime does not replay what it missed. A phone that put the app in the
+    // background (or lost signal) came back to a thread without the messages
+    // sent meanwhile, and showed them only after leaving the chat and coming
+    // back. So the thread is fetched again whenever the screen returns, and
+    // whenever the channel reconnects after a drop.
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void fetchThread();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    let subscribedOnce = false;
 
     const channel = supabase
       .channel(`portal-messages-${clientId}`)
@@ -453,10 +517,15 @@ export default function Chat({ clientId, as, heading }: ChatProps) {
           if (incoming.sender_role !== as) void markMessagesSeen(clientId);
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status !== "SUBSCRIBED") return;
+        if (subscribedOnce) void fetchThread();
+        subscribedOnce = true;
+      });
 
     return () => {
       active = false;
+      document.removeEventListener("visibilitychange", onVisible);
       supabase.removeChannel(channel);
     };
   }, [clientId, as, markMessagesSeen]);
