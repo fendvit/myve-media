@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { db, supabase } from "./db";
+import { AUTH_STORAGE_KEY } from "@/integrations/supabase/client";
+import { authStorage, isNative, storedSessionUserId } from "./authStorage";
 import type { PortalProfile, PortalRole } from "./types";
 
 interface PortalSessionValue {
@@ -15,6 +17,39 @@ interface PortalSessionValue {
 }
 
 const PortalSessionContext = createContext<PortalSessionValue | null>(null);
+
+/**
+ * Last known profile, so a phone with no signal does not land on the login
+ * screen. The access token lives an hour; opened later without signal, it
+ * cannot refresh, getSession() returns no session and the app used to show
+ * login although the stored login was still on the device and would work
+ * again with signal. Only the role and client id are kept, never a token.
+ */
+const PROFILE_KEY = "myve.portal.lastProfile";
+
+async function rememberProfile(profile: PortalProfile | null) {
+  if (profile) await authStorage.setItem(PROFILE_KEY, JSON.stringify(profile)).catch(() => undefined);
+}
+
+async function rememberedProfile(): Promise<PortalProfile | null> {
+  const userId = await storedSessionUserId(authStorage, AUTH_STORAGE_KEY);
+  if (!userId) return null;
+  try {
+    const saved = JSON.parse((await authStorage.getItem(PROFILE_KEY)) ?? "null") as PortalProfile | null;
+    return saved && saved.user_id === userId ? saved : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The stored session as-is (token possibly expired) — enough to render the shell offline. */
+async function storedSession(): Promise<Session | null> {
+  try {
+    return JSON.parse((await authStorage.getItem(AUTH_STORAGE_KEY)) ?? "null") as Session | null;
+  } catch {
+    return null;
+  }
+}
 
 export function PortalSessionProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
@@ -42,17 +77,69 @@ export function PortalSessionProvider({ children }: { children: ReactNode }) {
     }
     setProfileError(null);
     setProfile((data as PortalProfile) ?? null);
+    await rememberProfile((data as PortalProfile) ?? null);
   }
 
   useEffect(() => {
     let active = true;
+    let waitingForSignal = false;
 
-    // onAuthStateChange fires synchronously with the stored session on mount,
-    // so this also covers the "already logged in" path.
+    // The initial check. A refresh that failed on the network leaves the
+    // stored login in place (supabase-js only drops it on a real rejection),
+    // so with a remembered profile we show the app and check again online.
+    const check = async () => {
+      waitingForSignal = false;
+      const { data, error } = await supabase.auth.getSession();
+      if (!active) return;
+      if (!data.session && error) {
+        const [offlineSession, offlineProfile] = await Promise.all([storedSession(), rememberedProfile()]);
+        if (!active) return;
+        if (offlineSession && offlineProfile) {
+          setSession(offlineSession);
+          setProfile(offlineProfile);
+          waitingForSignal = true;
+          setLoading(false);
+          return;
+        }
+      }
+      setSession(data.session);
+      await loadProfile(data.session?.user?.id);
+      if (active) setLoading(false);
+    };
+
+    const onSignal = () => {
+      if (waitingForSignal) void check();
+    };
+    window.addEventListener("online", onSignal);
+
+    // Installed app: the WebView's refresh timer does not run in the
+    // background, so stop it there and refresh right away on return
+    // (Supabase's advice for mobile apps).
+    let removeAppListener: (() => void) | null = null;
+    if (isNative()) {
+      void import("@capacitor/app").then(({ App }) =>
+        App.addListener("appStateChange", ({ isActive }) => {
+          if (isActive) {
+            void supabase.auth.startAutoRefresh();
+            onSignal();
+          } else {
+            void supabase.auth.stopAutoRefresh();
+          }
+        }).then((listener) => {
+          if (active) removeAppListener = () => void listener.remove();
+          else void listener.remove();
+        }),
+      );
+    }
+
+    // Later changes (sign-in, refresh, sign-out). INITIAL_SESSION is left to
+    // check() above: offline it arrives as null and would show the login.
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      if (!active) return;
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (!active || event === "INITIAL_SESSION") return;
+      if (event === "SIGNED_OUT") void authStorage.removeItem(PROFILE_KEY);
+      waitingForSignal = false;
       setSession(nextSession);
       // Deferred: calling back into supabase inside this callback can deadlock
       // the auth lock in supabase-js v2.
@@ -63,15 +150,12 @@ export function PortalSessionProvider({ children }: { children: ReactNode }) {
       }, 0);
     });
 
-    supabase.auth.getSession().then(async ({ data }) => {
-      if (!active) return;
-      setSession(data.session);
-      await loadProfile(data.session?.user?.id);
-      if (active) setLoading(false);
-    });
+    void check();
 
     return () => {
       active = false;
+      window.removeEventListener("online", onSignal);
+      removeAppListener?.();
       subscription.unsubscribe();
     };
   }, []);
@@ -95,6 +179,7 @@ export function PortalSessionProvider({ children }: { children: ReactNode }) {
         await loadProfile(data.session?.user?.id);
       },
       signOut: async () => {
+        await authStorage.removeItem(PROFILE_KEY);
         await supabase.auth.signOut();
         setProfile(null);
         setProfileError(null);
