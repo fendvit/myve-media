@@ -1,7 +1,33 @@
+import { useEffect, useState } from "react";
 import { Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type DeviceVariant = "phone" | "laptop" | "tablet" | "desktop";
+
+/**
+ * A screenshot uploaded for an "app" project may be a desktop (landscape) capture.
+ * Squeezing that into a phone frame crops it to an unreadable sliver, so such
+ * images are shown in the browser frame instead.
+ */
+export const useResolvedVariant = (variant: DeviceVariant, src?: string | null): DeviceVariant => {
+  const [landscape, setLandscape] = useState(false);
+  useEffect(() => {
+    if (variant !== "phone" || !src) {
+      setLandscape(false);
+      return;
+    }
+    let cancelled = false;
+    const img = new Image();
+    img.onload = () => {
+      if (!cancelled) setLandscape(img.naturalWidth > img.naturalHeight * 1.1);
+    };
+    img.src = src;
+    return () => {
+      cancelled = true;
+    };
+  }, [variant, src]);
+  return variant === "phone" && landscape ? "desktop" : variant;
+};
 
 interface DeviceMockupProps {
   variant: DeviceVariant;
