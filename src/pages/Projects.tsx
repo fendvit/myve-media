@@ -8,7 +8,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { PAGES, breadcrumbLd } from "@/seo/content";
 import Seo from "@/components/Seo";
-import DeviceMockup from "@/components/ui/device-mockup";
+import DeviceMockup, { useResolvedVariant } from "@/components/ui/device-mockup";
 import { cn } from "@/lib/utils";
 
 type DeviceVariant = "phone" | "laptop" | "tablet" | "desktop";
@@ -24,6 +24,24 @@ const hostOf = (url?: string | null): string | undefined => {
   } catch {
     return undefined;
   }
+};
+
+const ProjectMockup = ({ project, logo }: { project: any; logo?: any }) => {
+  const src: string =
+    project.image_url ||
+    "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'><rect width='16' height='9' fill='%23141416'/></svg>";
+  const variant = useResolvedVariant(variantFor(project), src);
+  return (
+    <DeviceMockup
+      variant={variant}
+      src={src}
+      alt={project.title}
+      label={hostOf(project.external_url)}
+      className={variant === "phone" ? "max-w-[220px] mx-auto" : "max-w-[560px] mx-auto"}
+      hoverSrc={logo?.logo_url}
+      hoverAlt={logo?.name}
+    />
+  );
 };
 
 const Projects = () => {
@@ -132,23 +150,9 @@ const Projects = () => {
               <div className="flex flex-col gap-28 lg:gap-40">
                 {projects.map((project: any, i: number) => {
                   const logo = logoByProject[project.id];
-                  const variant = variantFor(project);
                   const flip = i % 2 === 1;
 
-                  const mockup = (
-                    <DeviceMockup
-                      variant={variant}
-                      src={
-                        project.image_url ||
-                        "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'><rect width='16' height='9' fill='%23141416'/></svg>"
-                      }
-                      alt={project.title}
-                      label={hostOf(project.external_url)}
-                      className={variant === "phone" ? "max-w-[220px] mx-auto" : "max-w-[560px] mx-auto"}
-                      hoverSrc={logo?.logo_url}
-                      hoverAlt={logo?.name}
-                    />
-                  );
+                  const mockup = <ProjectMockup project={project} logo={logo} />;
 
                   return (
                     <motion.article

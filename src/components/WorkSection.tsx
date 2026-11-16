@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import GradientRimButton from "@/components/ui/GradientRimButton";
-import DeviceMockup from "@/components/ui/device-mockup";
+import DeviceMockup, { useResolvedVariant } from "@/components/ui/device-mockup";
 import { cn } from "@/lib/utils";
 
 const VIDEO_SRC = "/video/closer.mp4";
@@ -21,14 +21,15 @@ const hostOf = (url?: string | null): string | undefined => {
 };
 
 const ProjectMockup = ({ project, className }: { project: any; className?: string }) => {
-  const isApp = project.category === "app";
+  const imageSrc: string =
+    project.image_url ||
+    "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'><rect width='16' height='9' fill='%23141416'/></svg>";
+  const variant = useResolvedVariant(project.category === "app" ? "phone" : "desktop", imageSrc);
+  const isApp = variant === "phone";
   const mockup = (
     <DeviceMockup
-      variant={isApp ? "phone" : "desktop"}
-      src={
-        project.image_url ||
-        "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'><rect width='16' height='9' fill='%23141416'/></svg>"
-      }
+      variant={variant}
+      src={imageSrc}
       alt={project.title}
       label={hostOf(project.external_url)}
       className={cn(isApp ? "max-w-[150px] md:max-w-[240px] mx-auto" : "max-w-[300px] md:max-w-[560px] mx-auto", className)}
