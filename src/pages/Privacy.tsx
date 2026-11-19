@@ -27,7 +27,7 @@ const Privacy = () => {
             <h2 className="font-display text-2xl font-semibold mt-8 mb-3">1. Kdo vaše údaje zpracovává?</h2>
             <p>
               Správcem vašich osobních údajů jsem já, Vít Fendrych, zakladatel digitální agentury MYVE.media, se sídlem Obránců míru 449, Jaroměř 551 01, IČO: 24512362. Kontaktovat mě můžete na e-mailu{" "}
-              <a href="mailto:fendvit.bis@gmail.com" className="text-primary hover:underline">fendvit.bis@gmail.com</a>.
+              <a href="mailto:info@myve.media" className="text-primary hover:underline">info@myve.media</a>.
             </p>
           </section>
 

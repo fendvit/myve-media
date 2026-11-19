@@ -19,7 +19,7 @@ const PILLARS = [
     index: "03",
     title: "Software na míru",
     line: "Když hotová řešení nestačí, postavíme vlastní.",
-    features: ["mobilní aplikace", "API integrace", "automatizace"],
+    features: ["mobilní aplikace", "API integrace", "AI automatizace"],
   },
 ];
 

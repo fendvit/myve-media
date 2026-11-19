@@ -129,7 +129,7 @@ const HeroOrbit = () => {
         <div className="relative z-10 container mx-auto px-6 lg:px-12 pb-20">
           <h1 className="display-type text-[clamp(2.6rem,10vw,8rem)] text-foreground">{NAME}</h1>
           <p className="text-muted-foreground text-lg mt-4 max-w-xl">
-            Weby, aplikace a software, které vydělávají.
+            Weby, aplikace a AI automatizace, které vydělávají.
           </p>
         </div>
       </section>
@@ -183,7 +183,7 @@ const HeroOrbit = () => {
             MYVE
           </motion.h2>
           <p className="text-foreground/90 font-body text-[clamp(1rem,2.4vw,1.5rem)] mt-3 md:mt-5">
-            Weby, aplikace a software, které vydělávají.
+            Weby, aplikace a AI automatizace, které vydělávají.
           </p>
           <p className="text-primary font-display font-medium text-[11px] md:text-xs tracking-[0.35em] uppercase mt-4">
             Making You Visible Everywhere
