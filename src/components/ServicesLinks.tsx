@@ -15,7 +15,7 @@ const ServicesLinks = () => (
           Ne jen web. <span className="text-primary">Celý systém.</span>
         </h2>
         <p className="text-muted-foreground text-lg leading-relaxed mt-6">
-          Web, e-maily, automatizace i aplikace — postavené tak, aby na sebe navazovaly, a s někým, kdo se o ně stará i po spuštění.
+          Web, AI automatizace, e-maily i aplikace — postavené tak, aby na sebe navazovaly, a s někým, kdo se o ně stará i po spuštění.
         </p>
       </motion.div>
       <div className="grid md:grid-cols-3 gap-6">

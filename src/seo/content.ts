@@ -29,10 +29,10 @@ export const AREA = ["Jaroměř", "Josefov", "Dvůr Králové nad Labem", "Nách
 export interface PageMeta { path: string; title: string; description: string }
 
 export const PAGES: Record<string, PageMeta> = {
-  home: { path: "/", title: "MYVE — Weby, e-maily, automatizace a aplikace na míru",
-          description: "Celá digitální infrastruktura firmy: web, který přivádí poptávky, e-maily a automatizace, aplikace na míru a jejich správa. Cena předem, odpověď do 1 pracovního dne." },
-  services: { path: "/sluzby", title: "Služby — web, e-maily, automatizace a aplikace | MYVE",
-              description: "Ne jen web. Postavíme a spravujeme celý systém, který firmě přivádí a obsluhuje zákazníky: web, e-mail marketing, automatizace, aplikace na míru a klientský portál." },
+  home: { path: "/", title: "MYVE — Weby, aplikace a AI automatizace na míru",
+          description: "Weby, aplikace a AI automatizace na míru pro firmy: web, který přivádí poptávky, automatizace, které za vás udělají ruční práci, a aplikace, když hotová řešení nestačí. Cena předem, odpověď do 1 pracovního dne." },
+  services: { path: "/sluzby", title: "Služby — weby, aplikace a AI automatizace | MYVE",
+              description: "Ne jen web. Postavíme a spravujeme celý systém, který firmě přivádí a obsluhuje zákazníky: web, AI automatizace, e-mail marketing, aplikace na míru a klientský portál." },
   legal: { path: "/pravni-informace", title: "Právní informace a cookies | MYVE",
            description: "Provozovatel webu myve.media, podmínky spolupráce, autorská práva, cookies a řešení sporů." },
   projects: { path: "/projekty", title: "Projekty a reference — weby a aplikace | MYVE",
@@ -262,12 +262,12 @@ export const SERVICES: ServicePageData[] = [
 export const OFFER = {
   eyebrow: "Služby",
   h1: "Ne jen web. Celý systém, který přivádí a obsluhuje zákazníky.",
-  lead: "Hezký web, o který se nikdo nestará, za rok přestane vydělávat. Proto stavíme celou digitální infrastrukturu firmy — web, který lidé najdou, e-maily a automatizace, které pracují za vás, a aplikace, když hotová řešení nestačí. A pak se o to celé staráme. Jeden partner, jedna faktura, jeden člověk, kterému napíšete.",
+  lead: "Hezký web, o který se nikdo nestará, za rok přestane vydělávat. Proto stavíme celou digitální infrastrukturu firmy — web, který lidé najdou, AI automatizace a e-maily, které pracují za vás, a aplikace, když hotová řešení nestačí. A pak se o to celé staráme. Jeden partner, jedna faktura, jeden člověk, kterému napíšete.",
   pillars: [
     { title: "Web, který přivádí poptávky", path: "/tvorba-webu",
       text: "Firemní web na míru s technickým SEO, napojený na e-maily a vaše nástroje. Běžně do 14 dní od zadání." },
-    { title: "E-maily a automatizace, které běží samy", path: "/emailing-a-automatizace",
-      text: "E-mail marketing, který chodí do doručené pošty, automatické sekvence a propojené systémy. Klientům odpadá přes 40 hodin ruční práce měsíčně." },
+    { title: "AI automatizace, které běží samy", path: "/emailing-a-automatizace",
+      text: "Automatizace s umělou inteligencí, e-mail marketing a propojené systémy: práci, kterou dnes děláte ručně, za vás udělá software. Klientům odpadá přes 40 hodin ruční práce měsíčně." },
     { title: "Aplikace a software na míru", path: "/aplikace-na-miru",
       text: "Mobilní aplikace pro Android i iPhone, webové aplikace a interní systémy — když hotová krabice nestačí." },
   ],
