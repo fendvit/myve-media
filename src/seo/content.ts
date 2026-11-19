@@ -14,13 +14,13 @@ export const BUSINESS = {
   name: "MYVE — Vít Fendrych",
   phone: "+420602513145",
   phoneDisplay: "+420 602 513 145",
-  email: "fendvit.bis@gmail.com",
+  email: "info@myve.media",
   street: "Obránců míru 449",
   locality: "Jaroměř",
   postalCode: "551 01",
   region: "Královéhradecký kraj",
   ico: "24512362",
-  sameAs: ["https://www.instagram.com/myve.media/", "https://www.facebook.com/profile.php?id=61588598097942", "https://www.linkedin.com/in/v%C3%ADt-fendrych-7559643aa/"],
+  sameAs: ["https://www.instagram.com/myve.media/", "https://www.facebook.com/myve.media", "https://www.linkedin.com/in/v%C3%ADt-fendrych-7559643aa/"],
 };
 
 export const AREA = ["Jaroměř", "Josefov", "Dvůr Králové nad Labem", "Náchod", "Hradec Králové", "Trutnov",
@@ -308,7 +308,7 @@ export const LEGAL: { updated: string; sections: { h2: string; id?: string; text
   sections: [
     { h2: "Provozovatel", text: [
       "Web myve.media provozuje Vít Fendrych, podnikající fyzická osoba zapsaná v živnostenském rejstříku, IČO 24512362, s místem podnikání Obránců míru 449, Jakubské Předměstí, 551 01 Jaroměř. MYVE (MYVE.media) je obchodní označení, pod kterým tyto služby poskytuje.",
-      "Kontakt: fendvit.bis@gmail.com, +420 602 513 145.",
+      "Kontakt: info@myve.media, +420 602 513 145.",
     ] },
     { h2: "Podmínky spolupráce", text: [
       "Každá zakázka se řídí písemnou smlouvou nebo potvrzenou objednávkou, která stanoví rozsah, cenu, termín a podmínky případné správy. Informace a ceny uvedené na tomto webu nejsou návrhem na uzavření smlouvy.",

@@ -10,7 +10,7 @@ import type { PortalClient } from "../lib/types";
 const CONTACT = {
   name: "Vít Fendrych",
   company: "MYVE",
-  email: "fendvit.bis@gmail.com",
+  email: "info@myve.media",
   phone: "+420 602 513 145",
   phoneHref: "+420602513145",
   address: "Obránců míru 449, 551 01 Jaroměř",

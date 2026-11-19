@@ -18,7 +18,7 @@ const COLS: { title: string; links: { label: string; to?: string; href?: string 
   ] },
   { title: "Sociální sítě", links: [
     { label: "Instagram", href: "https://www.instagram.com/myve.media/" },
-    { label: "Facebook", href: "https://www.facebook.com/profile.php?id=61588598097942" },
+    { label: "Facebook", href: "https://www.facebook.com/myve.media" },
     { label: "LinkedIn", href: "https://www.linkedin.com/in/v%C3%ADt-fendrych-7559643aa/" },
   ] },
 ];
@@ -59,7 +59,7 @@ const Footer = () => (
           <p className="text-foreground/85 leading-relaxed">
             Vít Fendrych<br />
             <a href="tel:+420602513145" className={LINK}>+420 602 513 145</a><br />
-            <a href="mailto:fendvit.bis@gmail.com" className={LINK}>fendvit.bis@gmail.com</a>
+            <a href="mailto:info@myve.media" className={LINK}>info@myve.media</a>
           </p>
         </div>
       </div>
