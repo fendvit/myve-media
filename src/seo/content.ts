@@ -20,7 +20,7 @@ export const BUSINESS = {
   postalCode: "551 01",
   region: "Královéhradecký kraj",
   ico: "24512362",
-  sameAs: ["https://www.instagram.com/myve.media/", "https://www.facebook.com/profile.php?id=100092353287649"],
+  sameAs: ["https://www.instagram.com/myve.media/", "https://www.facebook.com/profile.php?id=61588598097942", "https://www.linkedin.com/in/v%C3%ADt-fendrych-7559643aa/"],
 };
 
 export const AREA = ["Jaroměř", "Josefov", "Dvůr Králové nad Labem", "Náchod", "Hradec Králové", "Trutnov",

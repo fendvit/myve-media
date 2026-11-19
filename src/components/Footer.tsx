@@ -18,7 +18,8 @@ const COLS: { title: string; links: { label: string; to?: string; href?: string 
   ] },
   { title: "Sociální sítě", links: [
     { label: "Instagram", href: "https://www.instagram.com/myve.media/" },
-    { label: "Facebook", href: "https://www.facebook.com/profile.php?id=100092353287649" },
+    { label: "Facebook", href: "https://www.facebook.com/profile.php?id=61588598097942" },
+    { label: "LinkedIn", href: "https://www.linkedin.com/in/v%C3%ADt-fendrych-7559643aa/" },
   ] },
 ];
 

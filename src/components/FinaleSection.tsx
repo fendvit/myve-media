@@ -1,12 +1,13 @@
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
-import { Mail, Instagram, Facebook, ArrowRight } from "lucide-react";
+import { Mail, Instagram, Facebook, Linkedin, ArrowRight } from "lucide-react";
 import ConsultationDialog from "@/components/ConsultationDialog";
 import GradientRimButton from "@/components/ui/GradientRimButton";
 
 const socials = [
   { icon: Instagram, href: "https://www.instagram.com/myve.media/", label: "Instagram" },
-  { icon: Facebook, href: "https://www.facebook.com/profile.php?id=100092353287649", label: "Facebook" },
+  { icon: Facebook, href: "https://www.facebook.com/profile.php?id=61588598097942", label: "Facebook" },
+  { icon: Linkedin, href: "https://www.linkedin.com/in/v%C3%ADt-fendrych-7559643aa/", label: "LinkedIn" },
   { icon: Mail, href: "mailto:fendvit.bis@gmail.com", label: "Email" },
 ];
 
