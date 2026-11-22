@@ -32,7 +32,7 @@ const HeroCopy = () => (
         Postavíme vám web, aplikaci nebo automatizaci na míru a postaráme se o ně i po spuštění.
         Rozsah, termín i cenu znáte předem.
       </p>
-      <div className="mt-7 flex flex-col sm:flex-row gap-3 sm:items-center">
+      <div className="mt-7 flex flex-col items-start sm:flex-row gap-3 sm:items-center">
         <ConsultationDialog source="hero">
           <GradientRimButton as="button" variant="filled">
             <span>Konzultace zdarma</span>
@@ -148,9 +148,11 @@ const HeroOrbit = () => {
   );
   const vignette = (
     <>
-      <div className="absolute inset-x-0 bottom-0 h-[70%] bg-gradient-to-t from-background via-background/75 to-transparent pointer-events-none" />
-      {/* Desktop: the copy sits left of him, so darken the left side for contrast. */}
-      <div className="hidden md:block absolute inset-y-0 left-0 w-[60%] bg-gradient-to-r from-background/85 via-background/40 to-transparent pointer-events-none" />
+      {/* Text contrast (his note 2026-11-22: copy hard to read over the photo). Phone: the
+          lower half is nearly solid behind the copy and fades out above his chest. */}
+      <div className="absolute inset-x-0 bottom-0 h-[78%] bg-gradient-to-t from-background from-35% via-background/85 via-60% to-transparent pointer-events-none" />
+      {/* Desktop: the copy sits left of him, so the left side goes dark behind it. */}
+      <div className="hidden md:block absolute inset-y-0 left-0 w-[70%] bg-gradient-to-r from-background from-20% via-background/75 via-50% to-transparent pointer-events-none" />
     </>
   );
 
