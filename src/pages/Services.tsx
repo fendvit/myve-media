@@ -84,8 +84,10 @@ const Services = () => (
           <dl className="grid sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-10 border-t border-border pt-10">
             {OFFER.dials.map((d) => (
               <div key={d.k}>
-                <dt className="font-display font-semibold text-foreground text-lg">{d.k}</dt>
-                <div className="w-8 h-1 rounded-full bg-primary mt-3 mb-3" />
+                <dt className="font-display font-semibold text-foreground text-lg">
+                  {d.k}
+                  <span aria-hidden="true" className="block w-8 h-1 rounded-full bg-primary mt-3 mb-3" />
+                </dt>
                 <dd className="text-muted-foreground leading-relaxed">{d.v}</dd>
               </div>
             ))}

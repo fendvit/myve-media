@@ -8,8 +8,10 @@
 // site as before; a crawler gets the content without running JavaScript.
 //
 //   dist/_home.html                      "/"  (vercel.json routes "/" here; index.html stays the
-//                                              plain shell every other unknown URL falls back to)
+//                                              plain shell for /admin, /reset-password, new projects)
 //   dist/<path>/index.html               every other page, served by Vercel's filesystem step
+//   dist/404.html                        every unknown URL, with status 404 (since 2026-11-22)
+//   dist/llms.txt                        the page list for AI search (since 2026-11-22)
 //
 // A project published after the last deploy has no file yet: its URL falls through to the
 // shell exactly as before, and the next deploy adds it.
@@ -170,6 +172,42 @@ ${HOW_STEPS.map((s) => `<section><h2>${esc(s.number)} ${esc(s.title)}</h2><p>${e
     mkdirSync(dirname(out), { recursive: true });
     writeFileSync(out, html(shell, p));
   }
+
+  // Every unknown URL: vercel.json answers it with this file and status 404 (a real 404, not a
+  // 200 that search engines index as a copy of the homepage). The app renders NotFound on top.
+  const notFound = html(shell, { file: "404.html", path: "/404", title: "Stránka nenalezena (404) — MYVE",
+    description: "Tato stránka neexistuje nebo byla přesunuta. Vraťte se na hlavní stránku studia MYVE.", lds: [],
+    body: `<main><h1>Tuto stránku jsme nenašli.</h1><p>Odkaz je pravděpodobně neúplný nebo stránka byla přesunuta.</p>
+<p><a href="/">Hlavní stránka</a> · <a href="/sluzby">Služby</a> · <a href="/projekty">Projekty</a></p></main>` })
+    .replace(/<link data-rh="true" rel="canonical"[^>]*>\s*/, "")
+    .replace("</head>", '    <meta name="robots" content="noindex" />\n  </head>');
+  writeFileSync(resolve(DIST, "404.html"), notFound);
+
+  // llms.txt from the same page list, so a new page or reference is in it at the next deploy
+  // (until 2026-11-22 it was a hand-kept file in public/ that still listed 3 pages; the sitemap
+  // already had its generator, scripts/generate-sitemap.ts). Only the site's own titles and
+  // descriptions, no new claims.
+  const strip = (t: string) => t.replace(/\s*[|—]\s*MYVE$/, "").replace(/ — Projekt$/, "");
+  const line = (p: Page) => `- [${strip(p.title)}](${SITE}${p.path}): ${p.description}`;
+  const main = pages.filter((p) => !p.path.startsWith("/projekty/") && p.path !== "/zasady-ochrany-osobnich-udaju" && p.path !== "/pravni-informace");
+  writeFileSync(resolve(DIST, "llms.txt"), `# ${BUSINESS.name}
+
+> ${PAGES.home.description}
+
+Studio MYVE (Making You Visible Everywhere) vede Vít Fendrych. Sídlo: ${BUSINESS.street}, ${BUSINESS.postalCode} ${BUSINESS.locality}, ${BUSINESS.region}. IČO ${BUSINESS.ico}. Telefon ${BUSINESS.phoneDisplay}, e-mail ${BUSINESS.email}. Weby a aplikace pro firmy z oblasti: ${AREA.join(", ")}.
+
+## Stránky
+
+${main.map(line).join("\n")}
+
+## Projekty
+
+${pages.filter((p) => p.path.startsWith("/projekty/")).map(line).join("\n")}
+
+## Právní informace
+
+${pages.filter((p) => p.path === "/zasady-ochrany-osobnich-udaju" || p.path === "/pravni-informace").map(line).join("\n")}
+`);
   console.log(`prerender: ${pages.length} pages (${list.length} projects)`);
 }
 

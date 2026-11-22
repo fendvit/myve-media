@@ -118,10 +118,13 @@ const Navbar = () => {
         </div>
 
         {/* Mobile toggle */}
+        {/* 44×44 hit area (UX-004); the icon keeps its size */}
         <button
-          className="lg:hidden text-foreground p-2 -mr-2"
+          className="lg:hidden text-foreground -mr-2.5 inline-flex h-11 w-11 items-center justify-center"
           onClick={() => setMobileOpen(!mobileOpen)}
-          aria-label="Menu"
+          aria-label={mobileOpen ? "Zavřít menu" : "Otevřít menu"}
+          aria-expanded={mobileOpen}
+          aria-controls="mobile-menu"
         >
           <div className="space-y-1.5">
             <span
@@ -139,24 +142,25 @@ const Navbar = () => {
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
+            id="mobile-menu"
             className="lg:hidden bg-background/95 backdrop-blur-xl border-b border-border"
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="container mx-auto px-6 py-4 flex flex-col gap-4">
+            <div className="container mx-auto px-6 py-4 flex flex-col gap-1">
               {navLinks.map((link) => (
                 <a
                   key={link.href}
                   href={link.type === "route" ? link.href : "/" + link.href}
-                  className="text-muted-foreground hover:text-foreground text-base font-medium transition-colors py-1"
+                  className="text-muted-foreground hover:text-foreground text-base font-medium transition-colors py-2.5"
                   onClick={(e) => handleNavClick(e, link)}
                 >
                   {link.label}
                 </a>
               ))}
-              <div className="pt-2">
+              <div className="pt-4">
                 <NavCta source="navbar-mobile" onClick={() => setMobileOpen(false)} />
               </div>
             </div>

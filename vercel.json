@@ -18,6 +18,8 @@
       "has": [{ "type": "host", "value": "portal.myve.media" }],
       "dest": "/portal.html"
     },
-    { "src": "/(.*)", "dest": "/index.html" }
+    { "src": "/(admin|reset-password)/?", "dest": "/index.html" },
+    { "src": "/projekty/[^/]+/?", "dest": "/index.html" },
+    { "src": "/(.*)", "status": 404, "dest": "/404.html" }
   ]
 }

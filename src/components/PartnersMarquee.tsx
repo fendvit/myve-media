@@ -153,7 +153,7 @@ const PartnersMarquee = () => {
         <Link
           key={`${logo.id}-${index}`}
           to={`/projekty/${slug}`}
-          className="flex items-center justify-center mx-8 md:mx-12 flex-shrink-0"
+          className="flex min-h-11 items-center justify-center mx-8 md:mx-12 flex-shrink-0"
           draggable={false}
           onClick={(e) => {
             if (dragDistanceRef.current > 5) {
@@ -169,7 +169,7 @@ const PartnersMarquee = () => {
     return (
       <div
         key={`${logo.id}-${index}`}
-        className="flex items-center justify-center mx-8 md:mx-12 flex-shrink-0"
+        className="flex min-h-11 items-center justify-center mx-8 md:mx-12 flex-shrink-0"
       >
         {content}
       </div>
