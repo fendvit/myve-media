@@ -97,10 +97,12 @@ const GradientRimButton = React.forwardRef<HTMLElement, GradientRimButtonProps>(
             />
           </>
         )}
-        {/* Inner button surface */}
+        {/* Inner button surface. flex-1: when a parent stretches the wrapper (a flex column
+            on a phone), the surface must fill it, or the spinning rim shows as a big
+            orange blob in the empty part (seen on the myve.media hero, 2026-11-22). */}
         <span
           className={cn(
-            "relative z-10 rounded-full",
+            "relative z-10 flex flex-1 rounded-full",
             variant === "filled" ? "" : "bg-background"
           )}
           style={

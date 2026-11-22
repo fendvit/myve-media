@@ -1,36 +1,57 @@
 import { useCallback, useEffect, useRef } from "react";
-import { motion, MotionValue, transform, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import { motion, transform, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import { ArrowRight } from "lucide-react";
 import {
   FRAME_COUNT,
+  frameSrc,
   getNearestFrame,
   onFrameLoaded,
   preloadOrbitFrames,
 } from "@/lib/orbitFrames";
+import ConsultationDialog from "@/components/ConsultationDialog";
+import CallLink from "@/components/CallLink";
+import GradientRimButton from "@/components/ui/GradientRimButton";
 
-const NAME = "VÍT FENDRYCH";
+// The offer is on screen from the first paint. The orbit (him turning) still scrubs on
+// scroll, but behind the text and over a short pin, not three screens of letters
+// (conversion audit 2026-11-22: median visit 8 s, so nothing may wait for a scroll).
+const PROOF = ["7+ spuštěných projektů", "Odpověď do 1 pracovního dne", "Web do 14 dní"];
 
-/** Single letter that tracks in as the orbit scrubs. */
-const ScrubLetter = ({
-  p,
-  char,
-  start,
-  end,
-}: {
-  p: MotionValue<number>;
-  char: string;
-  start: number;
-  end: number;
-}) => {
-  // Function transforms opt out of framer's WAAPI scroll handoff, which
-  // misbehaves with Lenis-driven pinned sections (frozen keyframe values).
-  const opacity = useTransform(p, (v) => transform(v, [start, end], [0, 1]));
-  const y = useTransform(p, (v) => transform(v, [start, end], ["0.35em", "0em"]));
-  return (
-    <motion.span style={{ opacity, y }} className="inline-block">
-      {char === " " ? " " : char}
-    </motion.span>
-  );
-};
+const HeroCopy = () => (
+  <div className="container mx-auto px-5 lg:px-12">
+    <div className="max-w-xl">
+      <p className="text-primary font-display font-medium text-[11px] md:text-xs tracking-[0.3em] uppercase mb-4">
+        Vít Fendrych · MYVE
+      </p>
+      {/* Not .display-type: that style is all-caps 900, unreadable for a full sentence. */}
+      <h1 className="font-display font-bold tracking-[-0.02em] text-foreground text-[clamp(1.75rem,3.6vw,3.4rem)] leading-[1.06]">
+        Weby, aplikace a automatizace, které vaší firmě šetří čas a přivádějí zákazníky.
+      </h1>
+      {/* Hidden on phones so the copy stays below his face; the H1 already says it. */}
+      <p className="hidden sm:block text-foreground/80 text-base md:text-lg leading-relaxed mt-5 max-w-2xl">
+        Postavíme vám web, aplikaci nebo automatizaci na míru a postaráme se o ně i po spuštění.
+        Rozsah, termín i cenu znáte předem.
+      </p>
+      <div className="mt-7 flex flex-col items-start sm:flex-row gap-3 sm:items-center">
+        <ConsultationDialog source="hero">
+          <GradientRimButton as="button" variant="filled">
+            <span>Konzultace zdarma</span>
+            <ArrowRight className="w-5 h-5" aria-hidden />
+          </GradientRimButton>
+        </ConsultationDialog>
+        <CallLink source="hero" />
+      </div>
+      <ul className="mt-6 flex flex-wrap gap-x-5 gap-y-1 text-[11px] md:text-xs font-display uppercase tracking-[0.18em] text-foreground/70">
+        {PROOF.map((item, i) => (
+          <li key={item} className="flex items-center gap-5">
+            {i > 0 && <span aria-hidden className="h-1 w-1 rounded-full bg-primary" />}
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </div>
+);
 
 const HeroOrbit = () => {
   const sectionRef = useRef<HTMLElement>(null);
@@ -43,8 +64,10 @@ const HeroOrbit = () => {
     offset: ["start start", "end end"],
   });
 
-  // Orbit scrub spans the whole pinned range
   const frameProgress = useTransform(scrollYProgress, [0, 1], [0, FRAME_COUNT - 1]);
+  // Function transforms opt out of framer's WAAPI scroll handoff, which misbehaves with
+  // Lenis-driven pinned sections.
+  const copyOpacity = useTransform(scrollYProgress, (v) => transform(v, [0.75, 1], [1, 0]));
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -53,10 +76,8 @@ const HeroOrbit = () => {
     if (!ctx) return;
     const img = getNearestFrame(frameIndexRef.current);
     if (!img) return;
-
     const cw = canvas.width;
     const ch = canvas.height;
-    // cover-fit
     const scale = Math.max(cw / img.naturalWidth, ch / img.naturalHeight);
     const dw = img.naturalWidth * scale;
     const dh = img.naturalHeight * scale;
@@ -64,8 +85,8 @@ const HeroOrbit = () => {
     ctx.drawImage(img, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
   }, []);
 
-  // Canvas sizing (devicePixelRatio capped at 2 for perf)
   useEffect(() => {
+    if (reduced) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const resize = () => {
@@ -81,11 +102,24 @@ const HeroOrbit = () => {
       window.removeEventListener("resize", resize);
       window.removeEventListener("orientationchange", resize);
     };
-  }, [draw]);
+  }, [draw, reduced]);
 
-  // Preload + redraw as frames stream in and as scroll scrubs
   useEffect(() => {
-    preloadOrbitFrames();
+    if (reduced) return;
+    // The poster <img> shows frame 1 at once. The other 107 frames (~6–9 MB) load only
+    // once the visitor starts to scroll (or after 4 s on a desktop), so a phone visitor
+    // who reads the offer and calls never pays for the animation.
+    let started = false;
+    const start = () => {
+      if (started) return;
+      started = true;
+      preloadOrbitFrames();
+      off();
+    };
+    const events = ["scroll", "wheel", "touchstart", "keydown"] as const;
+    const off = () => events.forEach((e) => window.removeEventListener(e, start));
+    events.forEach((e) => window.addEventListener(e, start, { passive: true, once: true }));
+    const timer = window.innerWidth >= 768 ? window.setTimeout(start, 4000) : undefined;
     const offLoaded = onFrameLoaded(() => draw());
     const unsub = frameProgress.on("change", (v) => {
       const next = Math.round(v);
@@ -97,106 +131,51 @@ const HeroOrbit = () => {
     return () => {
       offLoaded();
       unsub();
+      off();
+      if (timer) window.clearTimeout(timer);
     };
-  }, [frameProgress, draw]);
+  }, [frameProgress, draw, reduced]);
 
-  // ---- Kinetic type timings (fractions of the pinned scroll range) ----
-  const words = NAME.split(" ");
-  const totalLetters = NAME.replace(/ /g, "").length;
-  const nameStart = 0.02;
-  const nameEnd = 0.38;
-  const perLetter = (nameEnd - nameStart) / totalLetters;
-
-  const nameOpacity = useTransform(scrollYProgress, (v) => transform(v, [0.42, 0.5], [1, 0]));
-  const nameScale = useTransform(scrollYProgress, (v) => transform(v, [0.42, 0.5], [1, 0.96]));
-
-  const myveOpacity = useTransform(scrollYProgress, (v) =>
-    transform(v, [0.52, 0.62, 0.92, 1], [0, 1, 1, 0])
+  const poster = (
+    <img
+      src={frameSrc(0)}
+      alt="Vít Fendrych, MYVE"
+      // React 18 only passes the lowercase attribute through to the DOM.
+      {...{ fetchpriority: "high" }}
+      decoding="async"
+      className="absolute inset-0 w-full h-full object-cover"
+    />
   );
-  const myveY = useTransform(scrollYProgress, (v) => transform(v, [0.52, 0.62], ["0.4em", "0em"]));
-
-  const hintOpacity = useTransform(scrollYProgress, (v) => transform(v, [0, 0.04], [1, 0]));
+  const vignette = (
+    <>
+      {/* Text contrast (his note 2026-11-22: copy hard to read over the photo). Phone: the
+          lower half is nearly solid behind the copy and fades out above his chest. */}
+      <div className="absolute inset-x-0 bottom-0 h-[78%] bg-gradient-to-t from-background from-35% via-background/85 via-60% to-transparent pointer-events-none" />
+      {/* Desktop: the copy sits left of him, so the left side goes dark behind it. */}
+      <div className="hidden md:block absolute inset-y-0 left-0 w-[70%] bg-gradient-to-r from-background from-20% via-background/75 via-50% to-transparent pointer-events-none" />
+    </>
+  );
 
   if (reduced) {
-    // Static fallback: first frame as image + headline, no pinning
     return (
       <section id="hero" className="relative min-h-[100svh] flex items-end overflow-hidden bg-background">
-        <img
-          src="/frames/desktop/orbit_001.webp"
-          alt="Vít Fendrych — MYVE"
-          className="absolute inset-0 w-full h-full object-cover opacity-80"
-        />
-        <div className="relative z-10 container mx-auto px-6 lg:px-12 pb-20">
-          <h1 className="display-type text-[clamp(2.6rem,10vw,8rem)] text-foreground">{NAME}</h1>
-          <p className="text-muted-foreground text-lg mt-4 max-w-xl">
-            Weby, aplikace a AI automatizace, které vydělávají.
-          </p>
+        {poster}
+        {vignette}
+        <div className="relative z-10 w-full pb-14 md:pb-20 pt-28">
+          <HeroCopy />
         </div>
       </section>
     );
   }
 
   return (
-    <section id="hero" ref={sectionRef} className="relative h-[300vh] bg-background">
+    <section id="hero" ref={sectionRef} className="relative h-[150svh] md:h-[170vh] bg-background">
       <div className="sticky top-0 h-[100svh] w-full overflow-hidden">
+        {poster}
         <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" aria-hidden />
-        {/* Bottom vignette so type always reads over the frame */}
-        <div className="absolute inset-x-0 bottom-0 h-[45%] bg-gradient-to-t from-background via-background/50 to-transparent pointer-events-none" />
-
-        {/* Phase A — VÍT FENDRYCH tracks in letter by letter */}
-        <motion.div
-          style={{ opacity: nameOpacity, scale: nameScale }}
-          className="absolute inset-x-0 bottom-[12svh] px-4 text-center pointer-events-none"
-        >
-          <h1 className="display-type text-foreground text-[clamp(2.2rem,10.5vw,9.5rem)] leading-[0.95] flex flex-wrap justify-center gap-x-[0.28em]">
-            {(() => {
-              let gi = 0;
-              return words.map((word, wi) => (
-                <span key={wi} className="inline-flex">
-                  {word.split("").map((char, ci) => {
-                    const idx = gi++;
-                    return (
-                      <ScrubLetter
-                        key={ci}
-                        p={scrollYProgress}
-                        char={char}
-                        start={nameStart + idx * perLetter}
-                        end={nameStart + (idx + 1) * perLetter}
-                      />
-                    );
-                  })}
-                </span>
-              ));
-            })()}
-          </h1>
-        </motion.div>
-
-        {/* Phase B — MYVE + subtitle */}
-        <motion.div
-          style={{ opacity: myveOpacity }}
-          className="absolute inset-x-0 bottom-[10svh] px-4 text-center pointer-events-none"
-        >
-          <motion.h2
-            style={{ y: myveY }}
-            className="display-type wordmark-myve text-[clamp(4rem,18vw,16rem)]"
-          >
-            MYVE
-          </motion.h2>
-          <p className="text-foreground/90 font-body text-[clamp(1rem,2.4vw,1.5rem)] mt-3 md:mt-5">
-            Weby, aplikace a AI automatizace, které vydělávají.
-          </p>
-          <p className="text-primary font-display font-medium text-[11px] md:text-xs tracking-[0.35em] uppercase mt-4">
-            Making You Visible Everywhere
-          </p>
-        </motion.div>
-
-        {/* Scroll hint */}
-        <motion.div
-          style={{ opacity: hintOpacity }}
-          className="absolute bottom-6 inset-x-0 flex flex-col items-center gap-2 text-muted-foreground pointer-events-none"
-        >
-          <span className="text-[10px] uppercase tracking-[0.35em] font-display">Scrollujte</span>
-          <span className="block w-px h-8 bg-gradient-to-b from-primary to-transparent" />
+        {vignette}
+        <motion.div style={{ opacity: copyOpacity }} className="absolute inset-x-0 bottom-0 pb-10 md:pb-16">
+          <HeroCopy />
         </motion.div>
       </div>
     </section>

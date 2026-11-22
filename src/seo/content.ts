@@ -3,9 +3,10 @@
 // scripts/prerender.ts, which writes the same text into static HTML at build time, so a
 // crawler gets each page's own title and content without running any JavaScript.
 //
-// Every claim here already stands elsewhere on the site (14 days, 1 working day, 40+ hours,
-// 7+ projects, price and scope agreed up front) or is Vít's confirmed standard deal (monthly
-// fee incl. domain; free handover if he ends it; buyout). Don't add a number nobody confirmed.
+// Every claim here already stands elsewhere on the site (14 days, 1 working day, 7+ projects,
+// price and scope agreed up front) or is Vít's confirmed standard deal (monthly fee incl.
+// domain; free handover if he ends it; buyout). Don't add a number nobody confirmed.
+// ("40+ hodin měsíčně" was removed 2026-11-22: no source for it was found.)
 
 export const SITE = "https://myve.media";
 export const OG_IMAGE = "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/fb58e36b-ed3d-4476-82a5-1c24c74bbd55";
@@ -56,6 +57,8 @@ export interface ServicePageData extends PageMeta {
   references: string[];     // project slugs on /projekty
   faq: Faq[];
   related: { label: string; path: string };
+  /** Pre-selected goal in the consultation form (one of ContactForm's GOALS). */
+  defaultGoal?: "Chci víc poptávek z webu" | "Chci zautomatizovat ruční práci" | "Potřebuju vlastní aplikaci";
 }
 
 const WEB_STEPS = [
@@ -72,7 +75,82 @@ const WEB_OWNED: Section = {
   ],
 };
 
+// /automatizace-pro-firmy (2026-11-22, Vít: many firms don't know what "automating them" means,
+// so the page explains it before it sells it). Formal tone, no client named and no number that
+// isn't proven; references get added as real automation jobs go live.
+const AUTOMATION: ServicePageData = {
+  slug: "automatizace-pro-firmy",
+  path: "/automatizace-pro-firmy",
+  title: "Automatizace pro firmy — co to znamená a jak probíhá | MYVE",
+  description: "Co znamená automatizace firmy, jak poznat, že se vám vyplatí, a jak u vás probíhá krok za krokem: poptávky, objednávky, e-maily, reporty i nástup nových lidí. Na vašich nástrojích, s n8n nebo Make, cena předem.",
+  service: "Automatizace firemních procesů",
+  eyebrow: "Automatizace a AI",
+  h1: "Automatizace pro firmy",
+  lead: "Automatizace znamená, že práci, kterou u vás dnes někdo dělá ručně a pořád stejným postupem, převezme software. Nejde o roboty ani o složité systémy za statisíce. Jde o to, aby se data přestala přepisovat z jednoho místa do druhého, aby důležité e-maily odcházely včas samy a aby se na nic nezapomínalo. Vaši lidé se pak mohou věnovat práci, kterou za ně žádný program neudělá.",
+  sections: [
+    {
+      h2: "Jak to vypadá v praxi",
+      text: [
+        "Představte si poptávku z vašeho webu. Dnes ji někdo najde v e-mailu, opíše do tabulky, odpoví zákazníkovi a snaží se nezapomenout zavolat. Po automatizaci se poptávka sama zapíše do vaší tabulky nebo CRM, zákazník okamžitě dostane potvrzení, vám přijde upozornění do telefonu, a pokud se do druhého dne nikdo neozve, systém vám to připomene.",
+        "Nikdo nic nepřepisuje, žádná poptávka se neztratí a vy přesně víte, v jakém stavu která je. Stejným způsobem se dají propojit objednávky, fakturace, e-maily zákazníkům i interní agenda.",
+      ],
+    },
+    {
+      h2: "Poznáte, že se vám automatizace vyplatí",
+      bullets: [
+        "Stejné údaje přepisujete mezi e-mailem, tabulkou, fakturačním systémem a dalšími nástroji.",
+        "Posíláte pořád dokola stejné e-maily: potvrzení, připomínky, pokyny nebo podklady.",
+        "Informace hledáte v e-mailech a chatech, protože nejsou na jednom místě.",
+        "Na odpovědi a follow-upy se občas zapomene, protože všechno hlídá člověk.",
+        "Každý nový zaměstnanec nebo klient znamená hodiny vysvětlování a posílání stejných dokumentů.",
+      ],
+    },
+    {
+      h2: "Co se dá automatizovat",
+      cards: [
+        { title: "Poptávky a obchod", text: "Zápis poptávek z webu i e-mailu, okamžité potvrzení zákazníkovi, připomínky a předání poptávky správnému člověku." },
+        { title: "Objednávky a fakturace", text: "Vystavení faktury nebo zálohy po objednávce, upomínky před splatností a přehled o tom, co je zaplacené." },
+        { title: "Nástup nového člověka", text: "Formulář, termín schůzky, uvítací e-maily, přístupy do sdílených složek a nástrojů. Nový kolega i klient dostane vše potřebné, aniž by to někdo posílal ručně." },
+        { title: "E-maily zákazníkům", text: "Uvítací série, pravidelné informace a rozesílky podle toho, co zákazník u vás koupil nebo o co se zajímal." },
+        { title: "Reporty a přehledy", text: "Čísla z různých nástrojů v jednom přehledu, který vám každý týden přijde sám, bez skládání tabulek." },
+      ],
+    },
+    {
+      h2: "Kde pomáhá umělá inteligence",
+      text: [
+        "Některé kroky dříve vyžadovaly člověka, protože bylo potřeba něčemu porozumět. Dnes je zvládne umělá inteligence: roztřídí příchozí e-maily, připraví návrh odpovědi, vytáhne údaje z faktury nebo z PDF a shrne dlouhou zprávu do několika vět.",
+        "Důležité rozhodnutí ale vždy zůstává na vás. Umělá inteligence věci připraví a člověk je schválí, takže nic neodchází bez vaší kontroly.",
+      ],
+    },
+    {
+      h2: "Co budeme potřebovat od vás",
+      text: [
+        "Jednoho člověka, který daný postup zná, přibližně hodinu jeho času na začátku a přístupy do nástrojů, které se mají propojit. Přístupy dostáváme jen do toho, co je pro automatizaci nutné. Technické pojmy znát nemusíte, otázky si vezmeme na sebe.",
+      ],
+    },
+  ],
+  steps: [
+    { title: "Konzultace zdarma", text: "Na krátkém hovoru nám popíšete, co u vás zabírá nejvíc ruční práce. Nemusíte nic připravovat ani znát technické pojmy." },
+    { title: "Mapa procesu", text: "Popíšeme, jak daný postup funguje dnes a co z něj převezme software. Dostanete jasný rozsah, termín a cenu předem a bez vašeho souhlasu se nic nestaví." },
+    { title: "Stavba na vašich nástrojích", text: "Automatizaci napojíme na nástroje, které už používáte, například Google Workspace, Microsoft 365, Notion, e-mail nebo fakturační systém. Kde je to potřeba, použijeme propojovací platformy n8n nebo Make." },
+    { title: "Zkušební provoz", text: "Automatizace nejdříve běží pod dohledem. Kontrolujete výsledky, a teprve když potvrdíte, že všechno funguje správně, převezme práci naplno." },
+    { title: "Provoz a správa", text: "Hlídáme, že všechno běží, upravujeme postupy podle toho, jak se vaše firma mění, a přidáváme další automatizace. Na zprávu odpovídáme do jednoho pracovního dne." },
+  ],
+  references: [],
+  faq: [
+    { q: "Musíme kvůli automatizaci měnit nástroje, které používáme?", a: "Ve většině případů ne. Automatizaci stavíme nad tím, co už máte, a nové nástroje doporučíme jen tehdy, když to dává smysl." },
+    { q: "Co když se něco pokazí?", a: "Každá automatizace má hlídání chyb. Když se některý krok nepovede, dozvíme se to my i vy, takže se nic tiše neztratí." },
+    { q: "Nahradí automatizace naše zaměstnance?", a: "Nenahradí. Odebere jim opakovanou práci, aby se mohli věnovat zákazníkům a tomu, co vyžaduje člověka." },
+    { q: "Kolik automatizace stojí?", a: "Podle rozsahu. Jednoduché propojení dvou nástrojů je jiná práce než celý obchodní proces. Cenu i termín znáte předem a konzultace je zdarma a nezávazná." },
+    { q: "Jak dlouho to trvá?", a: "Záleží na rozsahu. Termín dostanete předem spolu s cenou a větší procesy stavíme po částech, aby první část začala pracovat co nejdříve." },
+    { q: "Co když nevím, co by se u nás dalo automatizovat?", a: "To je nejčastější situace. Stačí nám popsat, co vás zdržuje, a na konzultaci společně najdeme, co má smysl automatizovat jako první. Když to smysl nedává, řekneme vám to na rovinu." },
+  ],
+  related: { label: "E-mail marketing a automatické sekvence", path: "/emailing-a-automatizace" },
+  defaultGoal: "Chci zautomatizovat ruční práci",
+};
+
 export const SERVICES: ServicePageData[] = [
+  AUTOMATION,
   {
     slug: "tvorba-webu",
     path: "/tvorba-webu",
@@ -134,7 +212,7 @@ export const SERVICES: ServicePageData[] = [
           { title: "Doručitelnost", text: "Správně nastavená doména (SPF, DKIM, DMARC), aby e-maily nekončily ve spamu. Čistá struktura seznamů, štítků a segmentů." },
           { title: "Automatické sekvence", text: "Uvítací série, připomínky a follow-upy po poptávce — e-maily, které se odešlou samy ve chvíli, kdy dávají smysl, a s jasnou podmínkou, kdy přestat." },
           { title: "Šablony a newslettery", text: "Šablony ve vašem stylu, které zvládnete posílat i sami, a pravidelný newsletter, pokud ho chcete." },
-          { title: "Propojení systémů", text: "Formuláře z webu, tabulky, CRM a e-mail napojíme na sebe. Klientům takhle odpadá přes 40 hodin ruční práce měsíčně." },
+          { title: "Propojení systémů", text: "Formuláře z webu, tabulky, CRM a e-mail napojíme na sebe, aby nikdo nemusel data přepisovat ručně. Jak takové automatizace probíhají, popisujeme na stránce Automatizace pro firmy." },
         ],
       },
       {
@@ -223,7 +301,7 @@ export const SERVICES: ServicePageData[] = [
         cards: [
           { title: "Mobilní aplikace pro Android i iPhone", text: "Jedna aplikace pro oba systémy, vydaná na Google Play i v App Storu — s přihlášením, notifikacemi a napojením na vaše data. Třeba náš klientský portál MYVE Portál nebo aplikace UltraQuest." },
           { title: "Webové aplikace a SaaS", text: "Aplikace, které běží v prohlížeči na počítači i mobilu bez instalace: správa turnajů, zákaznické portály, sběr a vyhodnocení poptávek. Třeba Sport Academy nebo RealFlows." },
-          { title: "Interní systémy a automatizace", text: "Z procesu, který zdržuje, uděláme systém, který šlape. Formuláře, tabulky a e-maily, které dnes někdo přepisuje ručně, propojíme. Klientům takhle odpadá přes 40 hodin ruční práce měsíčně." },
+          { title: "Interní systémy a automatizace", text: "Z procesu, který zdržuje, uděláme systém, který šlape. Formuláře, tabulky a e-maily, které dnes někdo přepisuje ručně, propojíme, a opakovanou práci za vás udělá software." },
         ],
       },
       {
@@ -266,8 +344,8 @@ export const OFFER = {
   pillars: [
     { title: "Web, který přivádí poptávky", path: "/tvorba-webu",
       text: "Firemní web na míru s technickým SEO, napojený na e-maily a vaše nástroje. Běžně do 14 dní od zadání." },
-    { title: "AI automatizace, které běží samy", path: "/emailing-a-automatizace",
-      text: "Automatizace s umělou inteligencí, e-mail marketing a propojené systémy: práci, kterou dnes děláte ručně, za vás udělá software. Klientům odpadá přes 40 hodin ruční práce měsíčně." },
+    { title: "AI automatizace, které běží samy", path: "/automatizace-pro-firmy",
+      text: "Práci, kterou u vás dnes někdo dělá ručně a pořád stejně, za vás udělá software: poptávky, objednávky, e-maily, reporty i nástup nových lidí. Vysvětlíme, co to pro vaši firmu znamená, a postavíme to na nástrojích, které už používáte." },
     { title: "Aplikace a software na míru", path: "/aplikace-na-miru",
       text: "Mobilní aplikace pro Android i iPhone, webové aplikace a interní systémy — když hotová krabice nestačí." },
   ],

@@ -112,11 +112,13 @@ async function main() {
   const pages: Page[] = [];
 
   pages.push({ file: "_home.html", path: "/", ...PAGES.home, lds: [], body: `<main>
-<h1>MYVE — tvorba webů a aplikací na míru</h1>
-<p>Jmenuji se Vít Fendrych a pomáhám firmám být vidět online. V rámci projektu MYVE — Making You Visible Everywhere tvoříme moderní webové stránky, webové aplikace a software na míru. Naším cílem není jen hezký web, ale funkční řešení, které pomáhá firmám růst.</p>
+<h1>Weby, aplikace a automatizace, které vaší firmě šetří čas a přivádějí zákazníky.</h1>
+<p>Postavíme vám web, aplikaci nebo automatizaci na míru a postaráme se o ně i po spuštění. Rozsah, termín i cenu znáte předem. <a href="tel:${BUSINESS.phone}">Zavolat ${BUSINESS.phoneDisplay}</a></p>
+<p>Jmenuji se Vít Fendrych a pomáhám firmám být vidět online. V rámci projektu MYVE — Making You Visible Everywhere tvoříme webové stránky, aplikace a automatizace na míru. Naším cílem není jen hezký web, ale funkční řešení, které firmě šetří čas a pomáhá jí růst.</p>
+<p><a href="/automatizace-pro-firmy">Co znamená automatizace firmy a jak probíhá</a></p>
 <h2>Ne jen web. Celý systém.</h2><p>Web, e-maily, automatizace i aplikace — postavené tak, aby na sebe navazovaly, a s někým, kdo se o ně stará i po spuštění.</p><ul>${OFFER.pillars.map((p) => `<li><a href="${p.path}">${esc(p.title)}</a> — ${esc(p.text)}</li>`).join("")}</ul><p><a href="/sluzby">Všechno, co pro vás postavíme</a></p>
 <h2>Klientská aplikace MYVE Portál</h2><p>${esc(OFFER.bonuses[0].text)}</p>
-<h2>V číslech</h2><ul><li>7+ projektů spuštěných pro české firmy</li><li>14 dní od zadání ke spuštění webu</li><li>40+ hodin měsíčně, které klienti nemusí řešit ručně</li><li>1 pracovní den — déle na naši odpověď nečekáte</li></ul>
+<h2>V číslech</h2><ul><li>7+ projektů spuštěných pro české firmy</li><li>14 dní od zadání ke spuštění webu</li><li>2 obchody s aplikacemi — vydáváme na Google Play i do App Storu</li><li>1 pracovní den — déle na naši odpověď nečekáte</li></ul>
 ${projLinks ? `<h2>Naše práce</h2><ul>${projLinks}</ul>` : ""}
 <p><a href="/jak-to-delame">Jak to děláme</a> · <a href="/projekty">Všechny projekty</a></p></main>` });
 

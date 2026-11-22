@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ScrollToTop from "./components/ScrollToTop";
 import SmoothScroll from "./components/SmoothScroll";
-import EntranceLoader from "./components/EntranceLoader";
 import Index from "./pages/Index";
 import Admin from "./pages/Admin";
 import Projects from "./pages/Projects";
@@ -27,7 +26,6 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <EntranceLoader />
         <SmoothScroll />
         <ScrollToTop />
         <Routes>
