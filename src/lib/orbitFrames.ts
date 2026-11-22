@@ -1,7 +1,7 @@
 /**
  * Hero orbit frame sequence.
- * The EntranceLoader kicks off preloading on mount so the orbit is
- * scrubbable the moment the loader reveals the page.
+ * The hero starts preloading on mount (after first paint), so the orbit is
+ * scrubbable within a moment of the page appearing.
  */
 import { createFrameSequence } from "@/lib/frameSequence";
 

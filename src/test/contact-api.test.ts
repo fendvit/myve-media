@@ -47,10 +47,30 @@ describe("api/contact", () => {
     expect(notify.html).toContain("Ahoj");
   });
 
-  it("still requires a name and a valid e-mail on the initial request", async () => {
+  it("still requires a name and a valid phone or e-mail on the initial request", async () => {
     expect((await post({ email: "jana@firma.cz" })).status).toBe(400);
     expect((await post({ name: "Jana", email: "nope" })).status).toBe(400);
+    expect((await post({ name: "Jana" })).status).toBe(400);
+    expect((await post({ name: "Jana", phone: "123" })).status).toBe(400);
     expect(sentEmails()).toHaveLength(0);
+  });
+
+  it("accepts a phone instead of an e-mail: notifies MYVE to call back, sends no confirmation", async () => {
+    const res = await post({ kind: "request", name: "Karel", phone: "+420 602 123 456" });
+    expect(res.status).toBe(200);
+    const emails = sentEmails();
+    expect(emails).toHaveLength(1);
+    expect(emails[0].subject).toBe("Nová poptávka: Karel (zavolat)");
+    expect(emails[0].html).toContain("+420 602 123 456");
+    expect(emails[0].reply_to).toBeUndefined();
+  });
+
+  it("a phone-only lead can add a note on the thank-you step", async () => {
+    const res = await post({ kind: "followup", name: "Karel", phone: "602123456", message: "Pekárna" });
+    expect(res.status).toBe(200);
+    const [notify] = sentEmails();
+    expect(notify.subject).toBe("Doplnění poptávky: Karel");
+    expect(notify.html).toContain("Pekárna");
   });
 
   it("follow-up needs a phone or a note and only notifies MYVE", async () => {

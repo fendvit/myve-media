@@ -16,20 +16,35 @@ import { FUNNEL_EVENTS, track } from "@/lib/track";
  */
 export const GOALS = [
   "Chci víc poptávek z webu",
-  "Chci ušetřit ruční práci",
+  "Chci zautomatizovat ruční práci",
   "Potřebuju vlastní aplikaci",
   "Ještě nevím",
 ] as const;
 
+const isEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+const isPhone = (s: string) => /^[+\d\s()./-]+$/.test(s) && s.replace(/\D/g, "").length >= 9;
+
+/** One field for "phone or e-mail": many small-firm owners would rather be called back. */
+export const splitContact = (raw: string): { email?: string; phone?: string } => {
+  const v = raw.trim();
+  if (isEmail(v)) return { email: v };
+  if (isPhone(v)) return { phone: v };
+  return {};
+};
+
 const schema = z.object({
   name: z.string().trim().min(2, "Zadejte prosím své jméno."),
-  email: z.string().trim().email("Zadejte prosím platný e-mail."),
+  contact: z
+    .string()
+    .trim()
+    .refine((v) => isEmail(v) || isPhone(v), "Zadejte prosím telefon nebo e-mail."),
   goal: z.string().optional(),
   message: z.string().trim().optional(),
   website: z.string().optional(), // honeypot
 });
 
 type FormValues = z.infer<typeof schema>;
+type Lead = { name: string; email?: string; phone?: string };
 
 const followUpSchema = z
   .object({
@@ -56,6 +71,8 @@ interface ContactFormProps {
   className?: string;
   /** Where the form was opened from — lands in analytics only. */
   source?: string;
+  /** Pre-selects one of GOALS (e.g. the automation page). */
+  defaultGoal?: (typeof GOALS)[number];
   /** Called the moment the request is accepted (e.g. to swap a dialog title). */
   onSubmitted?: () => void;
   /** Called when the visitor is done with the thank-you step (e.g. to close a dialog). */
@@ -82,22 +99,35 @@ const ThankYou = ({
   source,
   onDone,
 }: {
-  lead: { name: string; email: string };
+  lead: Lead;
   source?: string;
   onDone?: () => void;
 }) => {
+  const hasPhone = !!lead.phone;
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<FollowUpValues>({ resolver: zodResolver(followUpSchema) });
+  } = useForm<FollowUpValues>({
+    resolver: zodResolver(followUpSchema),
+    defaultValues: { phone: lead.phone ?? "" },
+  });
 
   const onSubmit = async (values: FollowUpValues) => {
+    if (hasPhone && !values.message?.trim()) {
+      toast.error("Napište prosím pár slov o tom, co děláte.");
+      return;
+    }
     setSending(true);
     try {
-      await postContact({ kind: "followup", ...lead, ...values });
+      await postContact({
+        kind: "followup",
+        ...lead,
+        message: values.message,
+        phone: hasPhone ? lead.phone : values.phone,
+      });
       track(FUNNEL_EVENTS.contactFollowUp, { source: source ?? "unknown" });
       setSent(true);
     } catch (err) {
@@ -130,19 +160,21 @@ const ThankYou = ({
           <p className="text-sm text-muted-foreground">
             Chcete, aby hovor šel rychleji? Doplňte cokoliv z toho níže. Není to nutné.
           </p>
-          <div className="space-y-1.5">
-            <label htmlFor="cf-phone" className="text-sm font-medium text-foreground/90">
-              Telefon
-            </label>
-            <Input
-              id="cf-phone"
-              type="tel"
-              autoComplete="tel"
-              placeholder="+420 …"
-              className={fieldBase}
-              {...register("phone")}
-            />
-          </div>
+          {!hasPhone && (
+            <div className="space-y-1.5">
+              <label htmlFor="cf-phone" className="text-sm font-medium text-foreground/90">
+                Telefon
+              </label>
+              <Input
+                id="cf-phone"
+                type="tel"
+                autoComplete="tel"
+                placeholder="+420 …"
+                className={fieldBase}
+                {...register("phone")}
+              />
+            </div>
+          )}
           <div className="space-y-1.5">
             <label htmlFor="cf-followup" className="text-sm font-medium text-foreground/90">
               Pár slov o tom, co děláte a co vás teď brzdí
@@ -190,9 +222,9 @@ const ThankYou = ({
   );
 };
 
-const ContactForm = ({ className, source, onSubmitted, onDone }: ContactFormProps) => {
+const ContactForm = ({ className, source, defaultGoal, onSubmitted, onDone }: ContactFormProps) => {
   const [submitting, setSubmitting] = useState(false);
-  const [lead, setLead] = useState<{ name: string; email: string } | null>(null);
+  const [lead, setLead] = useState<Lead | null>(null);
   const {
     register,
     handleSubmit,
@@ -200,19 +232,29 @@ const ContactForm = ({ className, source, onSubmitted, onDone }: ContactFormProp
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { goal: "", message: "" },
+    defaultValues: { goal: defaultGoal ?? "", message: "" },
   });
 
   const onSubmit = async (values: FormValues) => {
     setSubmitting(true);
+    const { email, phone } = splitContact(values.contact);
     track(FUNNEL_EVENTS.contactSubmit, {
       source: source ?? "unknown",
       goal: values.goal || "none",
+      via: phone ? "phone" : "email",
     });
     try {
-      await postContact({ kind: "request", ...values });
-      track(FUNNEL_EVENTS.contactSuccess, { source: source ?? "unknown" });
-      setLead({ name: values.name, email: values.email });
+      await postContact({
+        kind: "request",
+        name: values.name,
+        email,
+        phone,
+        goal: values.goal,
+        message: values.message,
+        website: values.website,
+      });
+      track(FUNNEL_EVENTS.contactSuccess, { source: source ?? "unknown", via: phone ? "phone" : "email" });
+      setLead({ name: values.name, email, phone });
       onSubmitted?.();
     } catch (err) {
       toast.error(errorMessage(err));
@@ -261,18 +303,19 @@ const ContactForm = ({ className, source, onSubmitted, onDone }: ContactFormProp
         </div>
 
         <div className="space-y-1.5">
-          <label htmlFor="cf-email" className="text-sm font-medium text-foreground/90">
-            E-mail
+          <label htmlFor="cf-contact" className="text-sm font-medium text-foreground/90">
+            Telefon nebo e-mail
           </label>
           <Input
-            id="cf-email"
-            type="email"
+            id="cf-contact"
+            type="text"
+            inputMode="email"
             autoComplete="email"
-            placeholder="vas@email.cz"
+            placeholder="602 123 456 nebo vas@email.cz"
             className={fieldBase}
-            {...register("email")}
+            {...register("contact")}
           />
-          {errors.email && <p className="text-xs text-primary">{errors.email.message}</p>}
+          {errors.contact && <p className="text-xs text-primary">{errors.contact.message}</p>}
         </div>
       </div>
 
@@ -344,7 +387,8 @@ const ContactForm = ({ className, source, onSubmitted, onDone }: ContactFormProp
       </button>
 
       <p className="text-xs text-muted-foreground">
-        Ozveme se do jednoho pracovního dne. Zdarma, nezávazně, bez obchodního tlaku. Odesláním
+        Když necháte telefon, zavoláme vám. Ozveme se do jednoho pracovního dne. Zdarma,
+        nezávazně, bez obchodního tlaku. Odesláním
         souhlasíte se zpracováním údajů pro účely odpovědi.
       </p>
     </form>

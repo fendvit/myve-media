@@ -9,8 +9,8 @@ import GradientRimButton from "@/components/ui/GradientRimButton";
 
 const allNavLinks: { label: string; href: string; type?: "route" }[] = [
   { label: "Služby", href: "/sluzby", type: "route" },
+  { label: "Automatizace", href: "/automatizace-pro-firmy", type: "route" },
   { label: "Projekty", href: "/projekty", type: "route" },
-  { label: "Portál", href: "#portal" },
   { label: "Jak to děláme", href: "/jak-to-delame", type: "route" },
   { label: "Reference", href: "#references" },
   { label: "O nás", href: "#about" },

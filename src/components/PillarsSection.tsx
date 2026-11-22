@@ -11,15 +11,15 @@ const PILLARS = [
   },
   {
     index: "02",
-    title: "Webové aplikace",
-    line: "Z procesu, který zdržuje, uděláme systém, který šlape.",
-    features: ["SaaS", "dashboardy", "portály", "interní systémy"],
+    title: "Automatizace",
+    line: "Práci, kterou dnes někdo dělá ručně, za vás udělá software.",
+    features: ["propojení nástrojů", "automatické e-maily", "umělá inteligence", "n8n · Make"],
   },
   {
     index: "03",
-    title: "Software na míru",
+    title: "Aplikace na míru",
     line: "Když hotová řešení nestačí, postavíme vlastní.",
-    features: ["mobilní aplikace", "API integrace", "AI automatizace"],
+    features: ["webové aplikace", "mobilní aplikace", "portály", "interní systémy"],
   },
 ];
 

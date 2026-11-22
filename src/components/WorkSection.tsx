@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { motion, MotionValue, transform, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import { motion, MotionValue, transform, useInView, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowRight } from "lucide-react";
@@ -136,6 +136,10 @@ const WorkSection = () => {
   const sectionRef = useRef<HTMLElement>(null);
   const reduced = useReducedMotion();
   const [active, setActive] = useState(0);
+  // The 4.9 MB clip loads only once the visitor scrolls towards it: autoplay ignores
+  // preload="metadata", so without this every visitor downloaded it on arrival. (The
+  // section starts ~1.5 screens down, so a bigger margin would load it at once again.)
+  const videoNear = useInView(sectionRef, { once: true, margin: "200px 0px" });
 
   const { data: projects } = useQuery({
     queryKey: ["work-projects"],
@@ -240,7 +244,7 @@ const WorkSection = () => {
         {/* Background clip — THE CLOSER, playing the whole time */}
         <video
           className="absolute inset-0 w-full h-full object-cover opacity-80"
-          src={VIDEO_SRC}
+          src={videoNear ? VIDEO_SRC : undefined}
           poster={POSTER_SRC}
           muted
           loop

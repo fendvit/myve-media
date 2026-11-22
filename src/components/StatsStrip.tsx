@@ -5,7 +5,7 @@ import AnimatedCounter from "@/components/ui/AnimatedCounter";
 const stats = [
   { target: 7, suffix: "+", label: "projektů spuštěných pro české firmy" },
   { target: 14, suffix: " dní", label: "a váš web je venku — od zadání ke spuštění" },
-  { target: 40, suffix: "+", label: "hodin měsíčně, které klienti nemusí řešit ručně" },
+  { target: 2, suffix: "", label: "obchody s aplikacemi — vydáváme na Google Play i do App Storu" },
   { target: 1, suffix: "", label: "pracovní den — déle na naši odpověď nečekáte" },
 ];
 
@@ -30,9 +30,9 @@ const StatsStrip = () => {
             <span className="text-primary">být vidět online.</span>
           </h2>
           <p className="text-muted-foreground text-lg leading-relaxed mt-6 max-w-2xl">
-            V rámci projektu MYVE — Making You Visible Everywhere tvoříme moderní webové
-            stránky, webové aplikace a software na míru. Naším cílem není jen hezký web,
-            ale funkční řešení, které pomáhá firmám růst.
+            V rámci projektu MYVE — Making You Visible Everywhere tvoříme webové stránky,
+            aplikace a automatizace na míru. Naším cílem není jen hezký web, ale funkční
+            řešení, které firmě šetří čas a pomáhá jí růst.
           </p>
         </motion.div>
 

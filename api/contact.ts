@@ -3,9 +3,11 @@
  *
  * Two kinds of POST, both from the site's consultation dialog:
  *
- *   kind: "request"  — the initial ask. Only name + e-mail are required; the
- *                      visitor never has to describe a project to get a reply.
- *                      Notifies MYVE and sends the visitor a confirmation.
+ *   kind: "request"  — the initial ask. Name + a phone OR an e-mail is all that is
+ *                      required (small firms often prefer to be called back);
+ *                      the visitor never has to describe a project to get a reply.
+ *                      Notifies MYVE; sends the visitor a confirmation when an
+ *                      e-mail was given.
  *   kind: "followup" — optional extras (phone, a note) the visitor adds on the
  *                      thank-you step, after they have already committed.
  *                      Notifies MYVE only.
@@ -41,6 +43,8 @@ const esc = (s: string) =>
   s.replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c] as string));
 
 const isEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+/** At least 9 digits, only phone characters (+420 602 513 145, 602513145, …). */
+const isPhone = (s: string) => /^[+\d\s()./-]+$/.test(s) && s.replace(/\D/g, "").length >= 9;
 
 const str = (v: unknown, max = 2000) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 
@@ -114,8 +118,16 @@ export default async function handler(req: Request): Promise<Response> {
   const message = str(body.message);
   const phone = str(body.phone, 60);
 
-  if (!email || !isEmail(email)) {
+  const hasEmail = !!email && isEmail(email);
+  const hasPhone = !!phone && isPhone(phone);
+  if (email && !hasEmail) {
     return json({ error: "Zadejte prosím platný e-mail." }, 400);
+  }
+  if (phone && !hasPhone && kind === "request") {
+    return json({ error: "Zadejte prosím platné telefonní číslo." }, 400);
+  }
+  if (!hasEmail && !hasPhone) {
+    return json({ error: "Zadejte prosím telefon nebo e-mail." }, 400);
   }
 
   // ---- Follow-up: extras added on the thank-you step ----------------------
@@ -123,13 +135,13 @@ export default async function handler(req: Request): Promise<Response> {
     if (!phone && !message) {
       return json({ error: "Doplňte prosím telefon nebo pár slov." }, 400);
     }
-    const who = name || email;
+    const who = name || (hasEmail ? email : phone);
     const html = wrap(
       "Doplnění poptávky",
       `${esc(who)} přidal(a) další informace k poptávce z webu myve.media`,
       rowsHtml([
         ["Jméno", name || "—"],
-        ["E-mail", email],
+        ["E-mail", hasEmail ? email : "—"],
         ["Telefon", phone || "—"],
       ]) + (message ? noteHtml("Co dělají a co je brzdí", message) : "")
     );
@@ -137,7 +149,7 @@ export default async function handler(req: Request): Promise<Response> {
       await sendEmail(apiKey, {
         from: fromEmail,
         to: [toEmail],
-        reply_to: email,
+        ...(hasEmail ? { reply_to: email } : {}),
         subject: `Doplnění poptávky: ${who}`,
         html,
       });
@@ -148,9 +160,9 @@ export default async function handler(req: Request): Promise<Response> {
     return json({ ok: true });
   }
 
-  // ---- Initial request: name + e-mail is all we ask -----------------------
+  // ---- Initial request: name + a phone or an e-mail is all we ask ---------
   if (!name) {
-    return json({ error: "Vyplňte prosím jméno a e-mail." }, 400);
+    return json({ error: "Vyplňte prosím jméno a telefon nebo e-mail." }, 400);
   }
 
   const notifyHtml = wrap(
@@ -158,9 +170,13 @@ export default async function handler(req: Request): Promise<Response> {
     `Z webu myve.media · slíbená odpověď ${REPLY_PROMISE}`,
     `<table style="border-collapse:collapse;margin-bottom:20px">${rowsHtml([
       ["Jméno", name],
-      ["E-mail", email],
+      ["Telefon", hasPhone ? phone : "—"],
+      ["E-mail", hasEmail ? email : "—"],
       ["Co by pomohlo", goal || "neuvedeno"],
     ])}</table>` +
+      (hasPhone && !hasEmail
+        ? `<p style="color:#111;font-size:14px;margin:0 0 16px"><strong>Nechal(a) jen telefon: chce zavolat.</strong></p>`
+        : "") +
       (message
         ? noteHtml("Poznámka", message)
         : `<p style="color:#8a8a8a;font-size:14px;margin:0">Bez poznámky. Klient nemusel nic vymýšlet, zjištění je na nás.</p>`)
@@ -204,8 +220,8 @@ export default async function handler(req: Request): Promise<Response> {
     await sendEmail(apiKey, {
       from: fromEmail,
       to: [toEmail],
-      reply_to: email,
-      subject: `Nová poptávka: ${name}${goal ? ` — ${goal}` : ""}`,
+      ...(hasEmail ? { reply_to: email } : {}),
+      subject: `Nová poptávka: ${name}${goal ? ` — ${goal}` : ""}${hasPhone && !hasEmail ? " (zavolat)" : ""}`,
       html: notifyHtml,
     });
   } catch (err) {
@@ -213,8 +229,9 @@ export default async function handler(req: Request): Promise<Response> {
     return json({ error: "Zprávu se nepodařilo odeslat. Zkuste to prosím znovu." }, 502);
   }
 
-  // Secondary: confirmation to the visitor. Best-effort — never fail on this.
-  try {
+  // Secondary: confirmation to the visitor, only when they gave an e-mail.
+  // Best-effort — never fail on this.
+  if (hasEmail) try {
     await sendEmail(apiKey, {
       from: fromEmail,
       to: [email],

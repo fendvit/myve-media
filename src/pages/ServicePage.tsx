@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Seo from "@/components/Seo";
 import ConsultationDialog from "@/components/ConsultationDialog";
+import CallLink from "@/components/CallLink";
 import GradientRimButton from "@/components/ui/GradientRimButton";
 import { supabase } from "@/integrations/supabase/client";
 import { serviceLd, type ServicePageData } from "@/seo/content";
@@ -24,6 +25,7 @@ const ServicePage = ({ data }: { data: ServicePageData }) => {
       const list = (rows || []) as Ref[];
       return data.references.map((s) => list.find((r) => r.slug === s)).filter((r): r is Ref => !!r);
     },
+    enabled: data.references.length > 0,
   });
 
   return (
@@ -45,17 +47,13 @@ const ServicePage = ({ data }: { data: ServicePageData }) => {
             <motion.p initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}
               className="text-muted-foreground text-lg md:text-xl leading-relaxed mt-8 max-w-3xl">{data.lead}</motion.p>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.35 }} className="mt-10 flex flex-wrap gap-4">
-              <ConsultationDialog source={data.slug}>
+              <ConsultationDialog source={data.slug} defaultGoal={data.defaultGoal}>
                 <GradientRimButton as="button" variant="filled">
                   <span>Zjistit, co by to stálo</span>
                   <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
                 </GradientRimButton>
               </ConsultationDialog>
-              <GradientRimButton variant="outline" renderInner={({ className, children }) => (
-                <a href={`tel:+420602513145`} className={className}>{children}</a>
-              )}>
-                +420 602 513 145
-              </GradientRimButton>
+              <CallLink source={data.slug} />
             </motion.div>
           </div>
         </section>
@@ -153,12 +151,13 @@ const ServicePage = ({ data }: { data: ServicePageData }) => {
               Nechte nám kontakt. Ozveme se do jednoho pracovního dne a řekneme vám na rovinu, co by to obnášelo, jak dlouho by to trvalo a kolik by to stálo. Zdarma a nezávazně.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
-              <ConsultationDialog source={`${data.slug}-bottom`}>
+              <ConsultationDialog source={`${data.slug}-bottom`} defaultGoal={data.defaultGoal}>
                 <GradientRimButton as="button" variant="filled">
                   <span>Zjistit, co by to stálo</span>
                   <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
                 </GradientRimButton>
               </ConsultationDialog>
+              <CallLink source={`${data.slug}-bottom`} />
             </div>
             <Link to={data.related.path} className="inline-block text-muted-foreground hover:text-primary transition-colors text-sm mt-10">
               {data.related.label} →

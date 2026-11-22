@@ -18,6 +18,7 @@ declare global {
 
 export const FUNNEL_EVENTS = {
   ctaClick: "cta_click",
+  callClick: "call_click",
   contactSubmit: "contact_submit",
   contactSuccess: "contact_success",
   contactFollowUp: "contact_followup",

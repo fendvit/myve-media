@@ -7,22 +7,25 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import ContactForm from "@/components/ContactForm";
+import ContactForm, { GOALS } from "@/components/ContactForm";
 import { FUNNEL_EVENTS, track } from "@/lib/track";
+import { BUSINESS } from "@/seo/content";
 
 interface ConsultationDialogProps {
   /** The element that opens the dialog (e.g. a button). */
   children: ReactNode;
   /** Where on the site this CTA lives — lands in analytics only. */
   source?: string;
+  /** Pre-selects a goal in the form (e.g. automation on the automation page). */
+  defaultGoal?: (typeof GOALS)[number];
 }
 
 /**
  * Opens the free-consultation request in a modal. The ask is deliberately
- * tiny (name + e-mail); the "tell us about your project" part happens after
- * the visitor has committed, on the thank-you step.
+ * tiny (name + a phone or an e-mail); the "tell us about your project" part
+ * happens after the visitor has committed, on the thank-you step.
  */
-const ConsultationDialog = ({ children, source = "unknown" }: ConsultationDialogProps) => {
+const ConsultationDialog = ({ children, source = "unknown", defaultGoal }: ConsultationDialogProps) => {
   const [open, setOpen] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
@@ -54,15 +57,27 @@ const ConsultationDialog = ({ children, source = "unknown" }: ConsultationDialog
                 Do jednoho pracovního dne víte, na čem jste
               </DialogTitle>
               <DialogDescription>
-                Nemusíte nic připravovat. Nechte nám kontakt, ozveme se a společně zjistíme, co
-                dává smysl, za kolik a kdy. Když to smysl nedává, řekneme vám to na rovinu.
+                Nemusíte nic připravovat. Nechte nám telefon nebo e-mail, ozveme se a společně
+                zjistíme, co dává smysl, za kolik a kdy. Když to smysl nedává, řekneme vám to na
+                rovinu.
               </DialogDescription>
+              <p className="text-sm text-muted-foreground pt-1">
+                Raději hned mluvit?{" "}
+                <a
+                  href={`tel:${BUSINESS.phone}`}
+                  onClick={() => track(FUNNEL_EVENTS.callClick, { source: `${source}-dialog` })}
+                  className="font-medium text-primary underline-offset-4 hover:underline"
+                >
+                  Zavolejte na {BUSINESS.phoneDisplay}
+                </a>
+              </p>
             </>
           )}
         </DialogHeader>
         <ContactForm
           className="mt-2"
           source={source}
+          defaultGoal={defaultGoal}
           onSubmitted={() => setSubmitted(true)}
           onDone={() => handleOpenChange(false)}
         />
