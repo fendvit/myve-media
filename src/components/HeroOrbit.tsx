@@ -20,7 +20,7 @@ const PROOF = ["7+ spuštěných projektů", "Odpověď do 1 pracovního dne", "
 const HeroCopy = () => (
   <div className="container mx-auto px-5 lg:px-12">
     <div className="max-w-xl">
-      <p className="text-primary font-display font-medium text-[11px] md:text-xs tracking-[0.3em] uppercase mb-4">
+      <p className="text-primary font-display font-medium text-xs tracking-[0.3em] uppercase mb-4">
         Vít Fendrych · MYVE
       </p>
       {/* Not .display-type: that style is all-caps 900, unreadable for a full sentence. */}
@@ -41,7 +41,7 @@ const HeroCopy = () => (
         </ConsultationDialog>
         <CallLink source="hero" />
       </div>
-      <ul className="mt-6 flex flex-wrap gap-x-5 gap-y-1 text-[11px] md:text-xs font-display uppercase tracking-[0.18em] text-foreground/70">
+      <ul className="mt-6 flex flex-wrap gap-x-5 gap-y-1 text-xs font-display uppercase tracking-[0.1em] sm:tracking-[0.18em] text-foreground/70">
         {PROOF.map((item, i) => (
           <li key={item} className="flex items-center gap-5">
             {i > 0 && <span aria-hidden className="h-1 w-1 rounded-full bg-primary" />}

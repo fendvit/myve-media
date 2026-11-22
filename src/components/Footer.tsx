@@ -33,11 +33,12 @@ const Footer = () => (
         {COLS.map((c) => (
           <nav key={c.title} aria-label={c.title}>
             <p className={HEAD}>{c.title}</p>
-            <ul className="space-y-2">
+            {/* rows ~36 px tall: comfortable thumb targets (UX-009) */}
+            <ul className="-my-2">
               {c.links.map((l) => (
                 <li key={l.label}>
-                  {l.to ? <Link to={l.to} className={LINK}>{l.label}</Link>
-                        : <a href={l.href} className={LINK} target="_blank" rel="noopener noreferrer">{l.label}</a>}
+                  {l.to ? <Link to={l.to} className={`${LINK} inline-block py-2`}>{l.label}</Link>
+                        : <a href={l.href} className={`${LINK} inline-block py-2`} target="_blank" rel="noopener noreferrer">{l.label}</a>}
                 </li>
               ))}
             </ul>
@@ -56,20 +57,21 @@ const Footer = () => (
         </div>
         <div>
           <p className={HEAD}>Kontakt</p>
-          <p className="text-foreground/85 leading-relaxed">
-            Vít Fendrych<br />
-            <a href="tel:+420602513145" className={LINK}>+420 602 513 145</a><br />
-            <a href="mailto:info@myve.media" className={LINK}>info@myve.media</a>
-          </p>
+          {/* phone + e-mail as ~36 px rows: axe target-size flagged the two tight lines */}
+          <div className="flex flex-col items-start text-foreground/85 leading-relaxed">
+            <span>Vít Fendrych</span>
+            <a href="tel:+420602513145" className={`${LINK} py-1.5`}>+420 602 513 145</a>
+            <a href="mailto:info@myve.media" className={`${LINK} -mt-1.5 py-1.5`}>info@myve.media</a>
+          </div>
         </div>
       </div>
 
       <div className="mt-16 lg:mt-24 flex flex-col md:flex-row md:items-center justify-between gap-4 text-sm text-muted-foreground">
         <p className="font-display">© {new Date().getFullYear()} MYVE — Making You Visible Everywhere</p>
-        <nav aria-label="Právní informace" className="flex flex-wrap gap-x-6 gap-y-2">
-          <Link to="/zasady-ochrany-osobnich-udaju" className="hover:text-primary transition-colors">Ochrana osobních údajů</Link>
-          <Link to="/pravni-informace" className="hover:text-primary transition-colors">Právní informace</Link>
-          <Link to="/pravni-informace#cookies" className="hover:text-primary transition-colors">Cookies</Link>
+        <nav aria-label="Právní informace" className="flex flex-wrap gap-x-6 -my-2">
+          <Link to="/zasady-ochrany-osobnich-udaju" className="inline-block py-2 hover:text-primary transition-colors">Ochrana osobních údajů</Link>
+          <Link to="/pravni-informace" className="inline-block py-2 hover:text-primary transition-colors">Právní informace</Link>
+          <Link to="/pravni-informace#cookies" className="inline-block py-2 hover:text-primary transition-colors">Cookies</Link>
         </nav>
       </div>
     </div>

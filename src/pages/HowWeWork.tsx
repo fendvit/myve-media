@@ -68,7 +68,7 @@ const CardContent = ({
               {step.number}
             </span>
             <div className="flex flex-col gap-1.5">
-              <span className="text-[10px] tracking-[0.25em] uppercase text-primary font-display font-medium">
+              <span className="text-xs tracking-[0.25em] uppercase text-primary font-display font-medium">
                 Krok {index + 1} ze {total}
               </span>
               <StepIndicatorDots active={index} total={total} />
@@ -181,7 +181,7 @@ const MobileStepsAccordion = ({ total }: { total: number }) => {
                 {step.number}
               </span>
               <div className="flex-1 min-w-0">
-                <span className="block text-[10px] tracking-[0.22em] uppercase text-primary font-display font-medium mb-1">
+                <span className="block text-xs tracking-[0.22em] uppercase text-primary font-display font-medium mb-1">
                   Krok {i + 1} ze {total}
                 </span>
                 <h2 className="font-display font-semibold text-[17px] text-foreground leading-snug">

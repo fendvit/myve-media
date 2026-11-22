@@ -30,7 +30,7 @@ const CallLink = ({
     onClick={() => track(FUNNEL_EVENTS.callClick, { source })}
   >
     <Phone className="w-4 h-4" aria-hidden />
-    <span>{children ?? `Zavolat ${BUSINESS.phoneDisplay}`}</span>
+    <span>{children ?? <>Zavolat <span className="whitespace-nowrap">{BUSINESS.phoneDisplay}</span></>}</span>
   </GradientRimButton>
 );
 

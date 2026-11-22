@@ -81,7 +81,7 @@ const ProjectDetail = () => {
         <div className="container mx-auto px-6 lg:px-12 max-w-5xl">
           <Link
             to="/projekty"
-            className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-10 group"
+            className="inline-flex min-h-11 items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-10 group"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
             <span className="text-sm font-medium">Zpět na projekty</span>
