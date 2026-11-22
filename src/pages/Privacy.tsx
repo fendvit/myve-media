@@ -54,7 +54,7 @@ const Privacy = () => {
           <section>
             <h2 className="font-display text-2xl font-semibold mt-8 mb-3">4. Kdo další má k datům přístup?</h2>
             <p>
-              K vašim údajům mám přístup primárně já. Aby web a e-maily fungovaly, využívám tyto zpracovatele: Vercel (provoz webu, odeslání formuláře a měření návštěvnosti), Resend (doručení zprávy z kontaktního formuláře do mé schránky), Google (e-mailová schránka a písma webu) a Supabase (databáze měření a klientského portálu, uložená v EU). Někteří z nich sídlí v USA; předávání údajů tam probíhá na základě záruk podle GDPR (rozhodnutí o odpovídající ochraně pro EU-US Data Privacy Framework nebo standardní smluvní doložky). Vaše data nikdy neprodávám třetím stranám.
+              K vašim údajům mám přístup primárně já. Aby web a e-maily fungovaly, využívám tyto zpracovatele: Vercel (provoz webu, odeslání formuláře a měření návštěvnosti), Resend (doručení zprávy z kontaktního formuláře do mé schránky), Google (e-mailová schránka a písma webu) a Supabase (databáze měření a klientského portálu, uložená v EU) a Sentry (záznam technických chyb webu, uložený v EU; obsahuje jen popis chyby, adresu stránky a typ prohlížeče, bez IP adresy a bez cookies). Někteří z nich sídlí v USA; předávání údajů tam probíhá na základě záruk podle GDPR (rozhodnutí o odpovídající ochraně pro EU-US Data Privacy Framework nebo standardní smluvní doložky). Vaše data nikdy neprodávám třetím stranám.
             </p>
           </section>
 
