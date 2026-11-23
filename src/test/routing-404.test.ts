@@ -26,6 +26,8 @@ const prerendered = new Set<string>([
   "/",
   ...[...prerender.matchAll(/file: "([a-z0-9-]+)\/index\.html"/g)].map((m) => `/${m[1]}`),
   ...SERVICES.map((s) => s.path),
+  // every article in src/blog/posts/ gets its own blog/<slug>/index.html at build
+  ...(prerender.includes("file: `blog/${") ? ["/blog/x"] : []),
 ]);
 
 describe("404 routing", () => {

@@ -14,6 +14,7 @@ const COLS: { title: string; links: { label: string; to?: string; href?: string 
   { title: "MYVE", links: [
     { label: "Projekty", to: "/projekty" },
     { label: "Jak to děláme", to: "/jak-to-delame" },
+    { label: "Blog", to: "/blog" },
     { label: "Klientský portál", href: "https://portal.myve.media" },
   ] },
   { title: "Sociální sítě", links: [

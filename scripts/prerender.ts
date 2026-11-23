@@ -15,9 +15,10 @@
 //
 // A project published after the last deploy has no file yet: its URL falls through to the
 // shell exactly as before, and the next deploy adds it.
-import { mkdirSync, readFileSync, writeFileSync, existsSync } from "fs";
+import { mkdirSync, readFileSync, readdirSync, writeFileSync, existsSync } from "fs";
 import { dirname, resolve } from "path";
 import { AREA, BUSINESS, HOW_AFTER, HOW_STEPS, LEGAL, OFFER, OG_IMAGE, PAGES, SERVICES, SITE, breadcrumbLd, businessLd, serviceLd } from "../src/seo/content";
+import { BLOG_META, czDate, parts, postLd, sortPosts, type BlogPost } from "../src/blog/types";
 
 const DIST = resolve("dist");
 
@@ -50,7 +51,7 @@ async function projects(): Promise<Project[]> {
 }
 
 // ------------------------------------------------------------------ the shared frame
-const NAV = `<nav aria-label="Hlavní navigace"><a href="/">MYVE</a> · <a href="/sluzby">Služby</a> · <a href="/tvorba-webu">Tvorba webů</a> · <a href="/emailing-a-automatizace">E-maily a automatizace</a> · <a href="/aplikace-na-miru">Aplikace na míru</a> · <a href="/projekty">Projekty</a> · <a href="/jak-to-delame">Jak to děláme</a></nav>`;
+const NAV = `<nav aria-label="Hlavní navigace"><a href="/">MYVE</a> · <a href="/sluzby">Služby</a> · <a href="/tvorba-webu">Tvorba webů</a> · <a href="/emailing-a-automatizace">E-maily a automatizace</a> · <a href="/aplikace-na-miru">Aplikace na míru</a> · <a href="/projekty">Projekty</a> · <a href="/jak-to-delame">Jak to děláme</a> · <a href="/blog">Blog</a></nav>`;
 const FOOT = `<footer><p><strong>${esc(BUSINESS.name)}</strong> · ${esc(BUSINESS.street)}, ${esc(BUSINESS.postalCode)} ${esc(BUSINESS.locality)} · <a href="tel:${BUSINESS.phone}">${esc(BUSINESS.phoneDisplay)}</a> · <a href="mailto:${BUSINESS.email}">${esc(BUSINESS.email)}</a> · IČO ${BUSINESS.ico}</p>
 <p>Weby a aplikace pro firmy z oblasti: ${AREA.map(esc).join(", ")}.</p><p><a href="/zasady-ochrany-osobnich-udaju">Ochrana osobních údajů</a> · <a href="/pravni-informace">Právní informace</a> · <a href="/tvorba-webu-jaromer">Tvorba webů Jaroměř</a></p></footer>`;
 // visible for the moment before the app takes over (and for anyone without JavaScript)
@@ -167,6 +168,25 @@ ${HOW_STEPS.map((s) => `<section><h2>${esc(s.number)} ${esc(s.title)}</h2><p>${e
         p.external_url ? `<p><a href="${esc(p.external_url)}" rel="noopener">Živý projekt: ${esc(p.external_url)}</a></p>` : ""}</main>` });
   }
 
+  // the blog: src/blog/posts/*.json (written weekly by C:\AI-OS\systems\blog\)
+  const BLOG_DIR = resolve("src/blog/posts");
+  const posts = sortPosts(existsSync(BLOG_DIR) ? readdirSync(BLOG_DIR).filter((f) => f.endsWith(".json"))
+    .map((f) => JSON.parse(readFileSync(resolve(BLOG_DIR, f), "utf8")) as BlogPost) : []);
+  const rich = (s: string) => parts(s).map((x) => x.href ? `<a href="${esc(x.href)}">${esc(x.text)}</a>` : esc(x.text)).join("");
+  pages.push({ file: "blog/index.html", path: "/blog", title: BLOG_META.title, description: BLOG_META.description,
+    lds: [breadcrumbLd([{ name: "MYVE", path: "/" }, { name: "Blog", path: "/blog" }])],
+    body: `<main><p>Blog</p><h1>Weby, AI a automatizace v praxi</h1><ul>${posts.map((p) =>
+      `<li><a href="/blog/${esc(p.slug)}">${esc(p.title)}</a> (${czDate(p.date)}) — ${esc(p.description)}</li>`).join("")}</ul></main>` });
+  for (const p of posts) {
+    pages.push({ file: `blog/${p.slug}/index.html`, path: `/blog/${p.slug}`, type: "article", title: p.seoTitle, description: p.description,
+      lds: postLd(p),
+      body: `<main><article><p><a href="/blog">Blog</a> · ${czDate(p.date)} · Vít Fendrych, MYVE</p><h1>${esc(p.title)}</h1><p>${rich(p.lead)}</p>${
+        p.sections.map((s) => `<section><h2>${esc(s.h2)}</h2>${(s.text || []).map((t) => `<p>${rich(t)}</p>`).join("")}${
+          s.bullets ? `<ul>${s.bullets.map((b) => `<li>${rich(b)}</li>`).join("")}</ul>` : ""}</section>`).join("")}${
+        p.faq.length ? `<section><h2>Časté otázky</h2>${p.faq.map((f) => `<h3>${esc(f.q)}</h3><p>${rich(f.a)}</p>`).join("")}</section>` : ""}${
+        p.related.length ? `<p>${p.related.map((r) => `<a href="${esc(r.path)}">${esc(r.label)}</a>`).join(" · ")}</p>` : ""}</article></main>` });
+  }
+
   for (const p of pages) {
     const out = resolve(DIST, p.file);
     mkdirSync(dirname(out), { recursive: true });
@@ -189,7 +209,7 @@ ${HOW_STEPS.map((s) => `<section><h2>${esc(s.number)} ${esc(s.title)}</h2><p>${e
   // descriptions, no new claims.
   const strip = (t: string) => t.replace(/\s*[|—]\s*MYVE$/, "").replace(/ — Projekt$/, "");
   const line = (p: Page) => `- [${strip(p.title)}](${SITE}${p.path}): ${p.description}`;
-  const main = pages.filter((p) => !p.path.startsWith("/projekty/") && p.path !== "/zasady-ochrany-osobnich-udaju" && p.path !== "/pravni-informace");
+  const main = pages.filter((p) => !p.path.startsWith("/projekty/") && !p.path.startsWith("/blog/") && p.path !== "/zasady-ochrany-osobnich-udaju" && p.path !== "/pravni-informace");
   writeFileSync(resolve(DIST, "llms.txt"), `# ${BUSINESS.name}
 
 > ${PAGES.home.description}
@@ -204,11 +224,15 @@ ${main.map(line).join("\n")}
 
 ${pages.filter((p) => p.path.startsWith("/projekty/")).map(line).join("\n")}
 
+## Články
+
+${pages.filter((p) => p.path.startsWith("/blog/")).map(line).join("\n")}
+
 ## Právní informace
 
 ${pages.filter((p) => p.path === "/zasady-ochrany-osobnich-udaju" || p.path === "/pravni-informace").map(line).join("\n")}
 `);
-  console.log(`prerender: ${pages.length} pages (${list.length} projects)`);
+  console.log(`prerender: ${pages.length} pages (${list.length} projects, ${posts.length} articles)`);
 }
 
 await main();

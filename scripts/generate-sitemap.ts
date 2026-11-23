@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from "fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "fs";
 import { resolve } from "path";
 import { SERVICES } from "../src/seo/content";
 
@@ -9,6 +9,7 @@ interface SitemapEntry {
   path: string;
   changefreq?: "always" | "hourly" | "daily" | "weekly" | "monthly" | "yearly" | "never";
   priority?: string;
+  lastmod?: string;
 }
 
 const entries: SitemapEntry[] = [
@@ -54,7 +55,7 @@ function build(entries: SitemapEntry[]) {
     [
       `  <url>`,
       `    <loc>${BASE_URL}${e.path}</loc>`,
-      `    <lastmod>${TODAY}</lastmod>`,
+      `    <lastmod>${e.lastmod || TODAY}</lastmod>`,
       e.changefreq ? `    <changefreq>${e.changefreq}</changefreq>` : null,
       e.priority ? `    <priority>${e.priority}</priority>` : null,
       `  </url>`,
@@ -70,7 +71,17 @@ function build(entries: SitemapEntry[]) {
   ].join("\n");
 }
 
+// the blog: every article in src/blog/posts/, with its own date as lastmod
+function blog(): SitemapEntry[] {
+  const dir = resolve("src/blog/posts");
+  if (!existsSync(dir)) return [];
+  const posts = readdirSync(dir).filter((f) => f.endsWith(".json"))
+    .map((f) => JSON.parse(readFileSync(resolve(dir, f), "utf8")) as { slug: string; date: string; updated?: string });
+  return [{ path: "/blog", changefreq: "weekly", priority: "0.7" },
+          ...posts.map((p) => ({ path: `/blog/${p.slug}`, changefreq: "monthly" as const, priority: "0.6", lastmod: p.updated || p.date }))];
+}
+
 const dynamic = await fetchProjects();
-const all = [...entries, ...dynamic];
+const all = [...entries, ...blog(), ...dynamic];
 writeFileSync(resolve("public/sitemap.xml"), build(all));
 console.log(`sitemap.xml written (${all.length} entries)`);

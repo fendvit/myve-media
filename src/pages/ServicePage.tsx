@@ -43,7 +43,7 @@ const ServicePage = ({ data }: { data: ServicePageData }) => {
             <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
               className="text-primary font-display font-medium text-xs tracking-[0.35em] uppercase mb-4">{data.eyebrow}</motion.p>
             <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }}
-              className="display-type text-foreground text-[clamp(2.6rem,8vw,6.5rem)] leading-[0.95]">{data.h1}</motion.h1>
+              className="display-type text-foreground text-[clamp(1.6rem,9vw,6.5rem)] leading-[0.95]">{data.h1}</motion.h1>
             <motion.p initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}
               className="text-muted-foreground text-lg md:text-xl leading-relaxed mt-8 max-w-3xl">{data.lead}</motion.p>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.35 }} className="mt-10 flex flex-wrap gap-4">

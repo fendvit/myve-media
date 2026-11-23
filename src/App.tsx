@@ -16,6 +16,8 @@ import Privacy from "./pages/Privacy";
 import ServicePage from "./pages/ServicePage";
 import Services from "./pages/Services";
 import Legal from "./pages/Legal";
+import Blog from "./pages/Blog";
+import BlogPost from "./pages/BlogPost";
 import { SERVICES } from "./seo/content";
 
 const queryClient = new QueryClient();
@@ -38,6 +40,8 @@ const App = () => (
           <Route path="/zasady-ochrany-osobnich-udaju" element={<Privacy />} />
           <Route path="/sluzby" element={<Services />} />
           <Route path="/pravni-informace" element={<Legal />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:slug" element={<BlogPost />} />
           {SERVICES.map((s) => (
             <Route key={s.path} path={s.path} element={<ServicePage data={s} />} />
           ))}
